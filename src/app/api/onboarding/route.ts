@@ -40,5 +40,12 @@ export async function POST(req: NextRequest) {
 
   await prisma.$transaction(weightOps)
 
-  return NextResponse.json({ userId: user.id })
+  const response = NextResponse.json({ userId: user.id })
+  response.cookies.set('userId', user.id, {
+    path: '/',
+    maxAge: 60 * 60 * 24 * 365, // 1 ano
+    httpOnly: false,             // precisa ser lido no cliente também
+    sameSite: 'lax',
+  })
+  return response
 }

@@ -34,8 +34,6 @@ export default function OnboardingPage() {
 
     const data = await res.json()
     if (data.userId) {
-      // salva userId em cookie via API
-      document.cookie = `userId=${data.userId}; path=/; max-age=${60 * 60 * 24 * 365}`
       router.push('/')
     }
     setLoading(false)
