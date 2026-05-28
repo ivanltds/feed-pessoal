@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import NewsCard from './NewsCard'
 import DoneScreen from './DoneScreen'
+import SettingsPanel from './SettingsPanel'
 
 interface NewsItem {
   id: string
@@ -27,7 +28,6 @@ export default function EditionFeed({ items, date, userId }: Props) {
   const readTimeRef = useRef<Record<string, number>>({})
   const enterTimeRef = useRef<Record<string, number>>({})
 
-  // rastreia tempo de leitura por card
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -47,12 +47,10 @@ export default function EditionFeed({ items, date, userId }: Props) {
       },
       { threshold: 0.5 }
     )
-
     document.querySelectorAll('[data-item-id]').forEach((el) => observer.observe(el))
     return () => observer.disconnect()
   }, [])
 
-  // detecta fim da edição
   useEffect(() => {
     if (!lastCardRef.current) return
     const observer = new IntersectionObserver(
@@ -63,7 +61,6 @@ export default function EditionFeed({ items, date, userId }: Props) {
     return () => observer.disconnect()
   }, [])
 
-  // envia feedback de leitura ao sair
   useEffect(() => {
     const sendFeedback = async () => {
       const events = items
@@ -74,7 +71,6 @@ export default function EditionFeed({ items, date, userId }: Props) {
           return null
         })
         .filter(Boolean)
-
       if (events.length > 0) {
         await fetch('/api/feedback', {
           method: 'POST',
@@ -84,36 +80,51 @@ export default function EditionFeed({ items, date, userId }: Props) {
         })
       }
     }
-
     window.addEventListener('beforeunload', sendFeedback)
     return () => window.removeEventListener('beforeunload', sendFeedback)
   }, [items, userId])
 
   return (
-    <main className="max-w-xl mx-auto px-4 pb-24">
-      {/* Header */}
-      <div className="sticky top-0 bg-[#f0f0ed]/95 backdrop-blur-sm py-4 mb-2 z-10 border-b border-neutral-300">
-        <p className="text-xs text-neutral-400 uppercase tracking-widest">feed pessoal</p>
-        <h1 className="text-base font-medium text-neutral-700 capitalize">{date}</h1>
-      </div>
-
-      {/* Cards da edição */}
-      <div className="space-y-4 pt-2">
-        {items.map((item, idx) => (
-          <div
-            key={item.id}
-            data-item-id={item.id}
-            ref={idx === items.length - 1 ? lastCardRef : undefined}
-          >
-            <NewsCard item={item} position={idx + 1} total={items.length} />
+    <div className="min-h-screen">
+      {/* ── Header ── */}
+      <header className="sticky top-0 z-10 bg-[#f0f0ed]/95 backdrop-blur-sm border-b border-neutral-300">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
+          <div>
+            <p className="text-xs font-semibold text-neutral-400 uppercase tracking-widest">feed pessoal</p>
+            <h1 className="text-sm font-medium text-neutral-700 capitalize">{date}</h1>
           </div>
-        ))}
-      </div>
+          <SettingsPanel />
+        </div>
+      </header>
 
-      {/* Tela de conclusão */}
-      {doneVisible && (
-        <DoneScreen userId={userId} topItem={items[0]} />
-      )}
-    </main>
+      {/* ── Conteúdo ── */}
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
+
+        {/* Mobile: lista única / Desktop: grid 2-3 colunas */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {items.map((item, idx) => (
+            <div
+              key={item.id}
+              data-item-id={item.id}
+              ref={idx === items.length - 1 ? lastCardRef : undefined}
+              className={
+                // Primeiro card ocupa largura total no sm, 2 colunas no lg
+                idx === 0
+                  ? 'sm:col-span-2 lg:col-span-2'
+                  : ''
+              }
+            >
+              <NewsCard item={item} position={idx + 1} total={items.length} featured={idx === 0} />
+            </div>
+          ))}
+        </div>
+
+        {doneVisible && (
+          <div className="max-w-xl mx-auto mt-8">
+            <DoneScreen userId={userId} topItem={items[0]} />
+          </div>
+        )}
+      </main>
+    </div>
   )
 }
