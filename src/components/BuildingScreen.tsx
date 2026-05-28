@@ -1,41 +1,34 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 
 const BEHIND_THE_SCENES = [
   {
-    emoji: '📡',
     title: 'Consultando fontes ao redor do mundo',
-    body: 'Neste momento estamos varrendo dezenas de feeds RSS de veículos como TechCrunch, InfoMoney, BBC e outros — coletando tudo que foi publicado nas últimas 48 horas.',
+    body: 'Varremos dezenas de feeds de veículos como TechCrunch, InfoMoney e BBC — coletando tudo publicado nas últimas 48 horas.',
   },
   {
-    emoji: '🤖',
     title: 'Uma IA reescreve cada título',
-    body: 'Sabe aqueles títulos "Você não vai acreditar no que aconteceu…"? A gente passa cada manchete por um modelo de linguagem que reescreve sem clickbait — direto ao ponto.',
+    body: 'Cada manchete passa por um modelo de linguagem que remove o clickbait e reescreve de forma direta, sem sensacionalismo.',
   },
   {
-    emoji: '⚖️',
     title: 'Seu perfil de leitura pesa na seleção',
-    body: 'Cada vez que você lê, pula ou mergulha numa notícia, o sistema ajusta os pesos dos seus tópicos. A edição de hoje já leva isso em conta.',
+    body: 'Cada vez que você lê, pula ou se aprofunda numa notícia, o sistema ajusta os pesos dos seus tópicos para a próxima edição.',
   },
   {
-    emoji: '🏆',
     title: 'Apenas 7 notícias chegam até você',
-    body: 'De centenas de itens coletados, um algoritmo de ranking combina recência, relevância pro seu perfil e diversidade de temas — e seleciona só os 7 melhores.',
+    body: 'De centenas de itens coletados, um algoritmo combina recência, relevância e diversidade de temas — e seleciona só os 7 melhores.',
   },
   {
-    emoji: '🔒',
     title: 'Seus dados ficam só com você',
-    body: 'Nenhum anunciante vê seu histórico. Suas preferências de leitura existem só para melhorar seu próprio feed — sem venda de dados, sem perfil publicitário.',
+    body: 'Nenhum anunciante acessa seu histórico. Suas preferências existem apenas para melhorar seu próprio feed.',
   },
 ]
 
 export default function BuildingScreen({ userId }: { userId: string }) {
-  const router = useRouter()
-  const [status, setStatus] = useState<'building' | 'done' | 'error'>('building')
   const [dots, setDots] = useState('.')
-  const [cardIndex, setCardIndex] = useState<number | null>(null)
+  const [error, setError] = useState(false)
+  const [showModal, setShowModal] = useState(false)
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -55,53 +48,48 @@ export default function BuildingScreen({ userId }: { userId: string }) {
         })
         if (cancelled) return
         if (res.ok) {
-          setStatus('done')
-          setTimeout(() => router.refresh(), 800)
+          window.location.reload()
         } else {
-          setStatus('error')
+          setError(true)
         }
       } catch {
-        if (!cancelled) setStatus('error')
+        if (!cancelled) setError(true)
       }
     }
     build()
     return () => { cancelled = true }
   }, [userId])
 
-  const card = cardIndex !== null ? BEHIND_THE_SCENES[cardIndex] : null
-
   return (
-    <main className="flex flex-col items-center justify-center min-h-screen p-8">
-      <div className="w-full max-w-sm">
-
-        {/* Estado principal */}
-        <div className="text-center space-y-4 mb-10">
-          {status === 'building' && (
+    <>
+      <main className="flex flex-col items-center justify-center min-h-screen p-8 text-center">
+        <div className="w-full max-w-xs space-y-5">
+          {!error ? (
             <>
-              <div className="w-10 h-10 border-2 border-neutral-800 border-t-transparent rounded-full animate-spin mx-auto" />
-              <h1 className="text-xl font-semibold text-neutral-900">
-                Preparando sua edição{dots}
-              </h1>
+              <div className="w-8 h-8 border-2 border-neutral-700 border-t-transparent rounded-full animate-spin mx-auto" />
+              <div>
+                <h1 className="text-lg font-semibold text-neutral-900">
+                  Preparando sua edição{dots}
+                </h1>
+                <p className="text-sm text-neutral-500 mt-1">
+                  Buscando as melhores notícias dos seus tópicos.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowModal(true)}
+                className="text-xs text-neutral-400 hover:text-neutral-600 underline underline-offset-2 transition-colors"
+              >
+                Por que demora?
+              </button>
+            </>
+          ) : (
+            <>
+              <h1 className="text-lg font-semibold text-neutral-900">Algo deu errado</h1>
               <p className="text-sm text-neutral-500">
-                Buscando as melhores notícias dos seus tópicos.
-              </p>
-            </>
-          )}
-          {status === 'done' && (
-            <>
-              <div className="text-3xl">✓</div>
-              <h1 className="text-xl font-semibold text-neutral-900">Edição pronta!</h1>
-              <p className="text-sm text-neutral-500">Carregando seu feed…</p>
-            </>
-          )}
-          {status === 'error' && (
-            <>
-              <h1 className="text-xl font-semibold text-neutral-900">Algo deu errado</h1>
-              <p className="text-sm text-neutral-500 mb-4">
                 Não conseguimos buscar as notícias agora.
               </p>
               <button
-                onClick={() => { setStatus('building'); router.refresh() }}
+                onClick={() => { setError(false); window.location.reload() }}
                 className="px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors"
               >
                 Tentar novamente
@@ -109,39 +97,37 @@ export default function BuildingScreen({ userId }: { userId: string }) {
             </>
           )}
         </div>
+      </main>
 
-        {/* Card expandido */}
-        {card && (
-          <div className="bg-white border border-neutral-200 rounded-2xl p-5 mb-4 shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <div className="text-2xl mb-2">{card.emoji}</div>
-            <h3 className="text-sm font-semibold text-neutral-900 mb-1">{card.title}</h3>
-            <p className="text-sm text-neutral-500 leading-relaxed">{card.body}</p>
-          </div>
-        )}
-
-        {/* Botões "por que demora?" */}
-        {status === 'building' && (
-          <div className="space-y-2">
-            <p className="text-xs text-neutral-400 text-center mb-3 uppercase tracking-widest">
-              O que está acontecendo agora?
-            </p>
-            {BEHIND_THE_SCENES.map((item, i) => (
+      {/* Modal minimalista */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
+          <div className="absolute inset-0 bg-black/20" onClick={() => setShowModal(false)} />
+          <div className="relative bg-white rounded-2xl shadow-lg w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-sm font-semibold text-neutral-900 uppercase tracking-widest">
+                O que acontece por trás
+              </h2>
               <button
-                key={i}
-                onClick={() => setCardIndex(cardIndex === i ? null : i)}
-                className={`w-full text-left px-4 py-3 rounded-xl border text-sm transition-all duration-150 ${
-                  cardIndex === i
-                    ? 'bg-blue-50 border-blue-200 text-blue-700 font-medium'
-                    : 'bg-white border-neutral-200 text-neutral-600 hover:border-neutral-300 hover:text-neutral-900'
-                }`}
+                onClick={() => setShowModal(false)}
+                className="text-neutral-400 hover:text-neutral-700 transition-colors"
               >
-                <span className="mr-2">{item.emoji}</span>
-                {item.title}
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
-            ))}
+            </div>
+            <div className="space-y-4">
+              {BEHIND_THE_SCENES.map((item, i) => (
+                <div key={i} className={i > 0 ? 'pt-4 border-t border-neutral-100' : ''}>
+                  <p className="text-sm font-medium text-neutral-800 mb-0.5">{item.title}</p>
+                  <p className="text-sm text-neutral-500 leading-relaxed">{item.body}</p>
+                </div>
+              ))}
+            </div>
           </div>
-        )}
-      </div>
-    </main>
+        </div>
+      )}
+    </>
   )
 }
