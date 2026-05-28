@@ -22,9 +22,10 @@ export async function buildEditionForUser(userId: string): Promise<void> {
   const topicWeights: TopicWeights = {}
   weights.forEach((w) => { topicWeights[w.topic] = w.weight })
 
-  // descobre tópicos com peso > 0
+  // descobre tópicos ativamente selecionados pelo usuário (peso > 1.0)
+  // tópicos não selecionados ficam com peso 1.0 (padrão) e não entram na edição
   const activeTopics = Object.entries(topicWeights)
-    .filter(([, w]) => w > 0)
+    .filter(([, w]) => w > 1.0)
     .map(([topic]) => topic)
 
   if (activeTopics.length === 0) {
