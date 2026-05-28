@@ -92,7 +92,7 @@ export default function EditionFeed({ items, date, userId }: Props) {
   return (
     <main className="max-w-xl mx-auto px-4 pb-24">
       {/* Header */}
-      <div className="sticky top-0 bg-neutral-50/90 backdrop-blur-sm py-4 mb-2 z-10 border-b border-neutral-100">
+      <div className="sticky top-0 bg-[#f0f0ed]/95 backdrop-blur-sm py-4 mb-2 z-10 border-b border-neutral-300">
         <p className="text-xs text-neutral-400 uppercase tracking-widest">feed pessoal</p>
         <h1 className="text-base font-medium text-neutral-700 capitalize">{date}</h1>
       </div>

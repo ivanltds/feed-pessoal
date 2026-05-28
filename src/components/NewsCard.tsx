@@ -30,7 +30,7 @@ export default function NewsCard({ item, position, total }: Props) {
       href={item.url}
       target="_blank"
       rel="noopener noreferrer"
-      className="group block rounded-2xl overflow-hidden bg-white border border-neutral-100 shadow-sm hover:shadow-md transition-shadow duration-200"
+      className="group block rounded-2xl overflow-hidden bg-white border border-neutral-200 shadow-sm hover:shadow-md transition-shadow duration-200"
     >
       {/* Imagem */}
       {item.imageUrl && (
@@ -61,7 +61,7 @@ export default function NewsCard({ item, position, total }: Props) {
         {/* Meta */}
         <div className="flex items-center gap-2 mt-3">
           <span className="text-xs text-neutral-400">{item.sourceName}</span>
-          <span className="text-neutral-200">·</span>
+          <span className="text-neutral-400">·</span>
           <span className="text-xs text-neutral-400">{timeAgo(item.publishedAt)}</span>
         </div>
       </div>

@@ -42,8 +42,8 @@ export default function OnboardingPage() {
   }
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center px-6 py-12 bg-neutral-50">
-      <div className="w-full max-w-sm">
+    <main className="min-h-screen flex flex-col items-center justify-center px-6 py-12">
+      <div className="w-full max-w-sm bg-white rounded-2xl shadow-sm border border-neutral-200 p-6">
         <div className="mb-8 text-center">
           <h1 className="text-2xl font-semibold text-neutral-900">feed pessoal</h1>
           <p className="text-sm text-neutral-500 mt-1">Sua edição diária, sem clickbait.</p>
