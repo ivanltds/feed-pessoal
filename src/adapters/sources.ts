@@ -34,8 +34,8 @@ export const ACTIVE_SOURCES: RssSource[] = [
   { id: 'the-atlantic', name: 'The Atlantic', url: 'https://www.theatlantic.com/feed/all/', topic: 'Cultura' },
 
   // Esportes
-  { id: 'uol-esportes', name: 'UOL Esportes', url: 'https://esporte.uol.com.br/rss.xml', topic: 'Esportes' },
-  { id: 'lance-net', name: 'Lance!', url: 'https://www.lance.com.br/rss.xml', topic: 'Esportes' },
+  { id: 'trivela', name: 'Trivela', url: 'https://trivela.com.br/feed/', topic: 'Esportes' },
+  { id: 'cnnbrasil-esportes', name: 'CNN Brasil Esportes', url: 'https://www.cnnbrasil.com.br/esportes/feed/', topic: 'Esportes' },
 ]
 
 export function getSourcesByTopics(topics: string[]): RssSource[] {
