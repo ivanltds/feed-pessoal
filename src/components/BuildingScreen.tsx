@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 const BEHIND_THE_SCENES = [
   {
@@ -26,19 +26,19 @@ const BEHIND_THE_SCENES = [
 ]
 
 export default function BuildingScreen({ userId }: { userId: string }) {
-  const [dots, setDots] = useState('.')
+  const [ready, setReady] = useState(false)
   const [error, setError] = useState(false)
   const [showModal, setShowModal] = useState(false)
+  const showModalRef = useRef(false)
 
+  // Mantém ref sincronizada para usar dentro do callback assíncrono
   useEffect(() => {
-    const interval = setInterval(() => {
-      setDots((d) => (d.length >= 3 ? '.' : d + '.'))
-    }, 500)
-    return () => clearInterval(interval)
-  }, [])
+    showModalRef.current = showModal
+  }, [showModal])
 
   useEffect(() => {
     let cancelled = false
+
     const build = async () => {
       try {
         const res = await fetch('/api/build-edition', {
@@ -47,8 +47,13 @@ export default function BuildingScreen({ userId }: { userId: string }) {
           body: JSON.stringify({ userId }),
         })
         if (cancelled) return
+
         if (res.ok) {
-          window.location.reload()
+          // Se o modal estiver aberto, marca como pronto mas não recarrega ainda
+          setReady(true)
+          if (!showModalRef.current) {
+            window.location.reload()
+          }
         } else {
           setError(true)
         }
@@ -56,9 +61,16 @@ export default function BuildingScreen({ userId }: { userId: string }) {
         if (!cancelled) setError(true)
       }
     }
+
     build()
     return () => { cancelled = true }
   }, [userId])
+
+  const closeModal = () => {
+    setShowModal(false)
+    // Se já terminou enquanto o modal estava aberto, recarrega agora
+    if (ready) window.location.reload()
+  }
 
   return (
     <>
@@ -66,15 +78,26 @@ export default function BuildingScreen({ userId }: { userId: string }) {
         <div className="w-full max-w-xs space-y-5">
           {!error ? (
             <>
-              <div className="w-8 h-8 border-2 border-neutral-700 border-t-transparent rounded-full animate-spin mx-auto" />
+              {/* Spinner em CSS puro para não piscar em re-renders */}
+              <div
+                className="w-8 h-8 rounded-full mx-auto"
+                style={{
+                  border: '2px solid #e5e5e5',
+                  borderTopColor: '#404040',
+                  animation: 'spin 0.8s linear infinite',
+                }}
+              />
+              <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+
               <div>
                 <h1 className="text-lg font-semibold text-neutral-900">
-                  Preparando sua edição{dots}
+                  Preparando sua edição
                 </h1>
                 <p className="text-sm text-neutral-500 mt-1">
                   Buscando as melhores notícias dos seus tópicos.
                 </p>
               </div>
+
               <button
                 onClick={() => setShowModal(true)}
                 className="text-xs text-neutral-400 hover:text-neutral-600 underline underline-offset-2 transition-colors"
@@ -85,9 +108,7 @@ export default function BuildingScreen({ userId }: { userId: string }) {
           ) : (
             <>
               <h1 className="text-lg font-semibold text-neutral-900">Algo deu errado</h1>
-              <p className="text-sm text-neutral-500">
-                Não conseguimos buscar as notícias agora.
-              </p>
+              <p className="text-sm text-neutral-500">Não conseguimos buscar as notícias agora.</p>
               <button
                 onClick={() => { setError(false); window.location.reload() }}
                 className="px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors"
@@ -99,24 +120,21 @@ export default function BuildingScreen({ userId }: { userId: string }) {
         </div>
       </main>
 
-      {/* Modal minimalista */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
-          <div className="absolute inset-0 bg-black/20" onClick={() => setShowModal(false)} />
+        <div className="fixed inset-0 flex items-center justify-center p-6" style={{ zIndex: 9999 }}>
+          <div className="absolute inset-0 bg-black/20" onClick={closeModal} />
           <div className="relative bg-white rounded-2xl shadow-lg w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-sm font-semibold text-neutral-900 uppercase tracking-widest">
+              <h2 className="text-xs font-semibold text-neutral-400 uppercase tracking-widest">
                 O que acontece por trás
               </h2>
-              <button
-                onClick={() => setShowModal(false)}
-                className="text-neutral-400 hover:text-neutral-700 transition-colors"
-              >
+              <button onClick={closeModal} className="text-neutral-400 hover:text-neutral-700 transition-colors">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
+
             <div className="space-y-4">
               {BEHIND_THE_SCENES.map((item, i) => (
                 <div key={i} className={i > 0 ? 'pt-4 border-t border-neutral-100' : ''}>
@@ -125,6 +143,15 @@ export default function BuildingScreen({ userId }: { userId: string }) {
                 </div>
               ))}
             </div>
+
+            {ready && (
+              <button
+                onClick={closeModal}
+                className="mt-6 w-full py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors"
+              >
+                Feed pronto — ver agora
+              </button>
+            )}
           </div>
         </div>
       )}
