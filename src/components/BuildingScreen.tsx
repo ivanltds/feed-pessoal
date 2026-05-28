@@ -56,11 +56,13 @@ export default function BuildingScreen({ userId }: { userId: string }) {
           }
         } else {
           const data = await res.json().catch(() => ({}))
-          if ((data as { reason?: string }).reason === 'no_topics') {
+          const reason = (data as { reason?: string }).reason
+          if (reason === 'no_topics') {
             // Usuário sem tópicos configurados → volta para onboarding
             window.location.href = '/onboarding'
             return
           }
+          // no_items ou outro erro → mostra tela de erro
           setError(true)
         }
       } catch {

@@ -13,6 +13,9 @@ export async function POST(req: NextRequest) {
     if (result === 'no_topics') {
       return NextResponse.json({ ok: false, reason: 'no_topics' }, { status: 422 })
     }
+    if (result === 'no_items') {
+      return NextResponse.json({ ok: false, reason: 'no_items' }, { status: 422 })
+    }
     return NextResponse.json({ ok: true })
   } catch (err) {
     console.error('[build-edition] Erro:', err)

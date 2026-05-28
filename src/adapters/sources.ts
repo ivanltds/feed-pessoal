@@ -34,7 +34,8 @@ export const ACTIVE_SOURCES: RssSource[] = [
   { id: 'the-atlantic', name: 'The Atlantic', url: 'https://www.theatlantic.com/feed/all/', topic: 'Cultura' },
 
   // Esportes
-  { id: 'ge-esportes', name: 'GE Globo', url: 'https://ge.globo.com/rss/ge.xml', topic: 'Esportes' },
+  { id: 'uol-esportes', name: 'UOL Esportes', url: 'https://esporte.uol.com.br/rss.xml', topic: 'Esportes' },
+  { id: 'lance-net', name: 'Lance!', url: 'https://www.lance.com.br/rss.xml', topic: 'Esportes' },
 ]
 
 export function getSourcesByTopics(topics: string[]): RssSource[] {
