@@ -40,7 +40,7 @@ export async function fetchFromRss(source: RssSource): Promise<RawNewsItem[]> {
       topic: source.topic,
       title: item.title ?? 'Sem título',
       url: item.link ?? '',
-      imageUrl: extractImage(item as Parser.Item & Record<string, unknown>),
+      imageUrl: extractImage(item as unknown as Parser.Item & Record<string, unknown>),
       publishedAt: item.pubDate ? new Date(item.pubDate) : new Date(),
       summary: item.contentSnippet?.slice(0, 300),
     }))
