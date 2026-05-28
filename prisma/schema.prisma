@@ -1,0 +1,76 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  editionHour  Int      @default(7)   // 7 = 7h da manhã, 19 = 19h
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  topicWeights UserTopicWeight[]
+  feedbacks    FeedbackEvent[]
+  editions     Edition[]
+}
+
+model UserTopicWeight {
+  id        String   @id @default(cuid())
+  userId    String
+  topic     String
+  weight    Float    @default(1.0)
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, topic])
+}
+
+model Edition {
+  id          String     @id @default(cuid())
+  userId      String
+  date        String     // "2026-05-27"
+  publishedAt DateTime   @default(now())
+
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items       NewsItem[]
+
+  @@unique([userId, date])
+}
+
+model NewsItem {
+  id               String   @id @default(cuid())
+  editionId        String
+  topic            String
+  sourceId         String
+  sourceName       String
+  originalTitle    String
+  normalizedTitle  String
+  imageUrl         String?
+  url              String
+  publishedAt      DateTime
+  score            Float    @default(0)
+  position         Int      // 1-7
+
+  edition          Edition  @relation(fields: [editionId], references: [id], onDelete: Cascade)
+  feedbacks        FeedbackEvent[]
+}
+
+model FeedbackEvent {
+  id         String   @id @default(cuid())
+  userId     String
+  newsItemId String
+  type       String   // "deep_dive_question" | "long_read" | "skip"
+  topic      String
+  delta      Float    // variação aplicada ao peso
+  createdAt  DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  newsItem   NewsItem @relation(fields: [newsItemId], references: [id], onDelete: Cascade)
+}
