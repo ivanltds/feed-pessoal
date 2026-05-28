@@ -72,7 +72,7 @@ function DeepDiveContent() {
   return (
     <div className="max-w-xl mx-auto flex flex-col min-h-screen">
       {/* Header */}
-      <div className="sticky top-0 bg-neutral-50/90 backdrop-blur-sm px-4 py-3 border-b border-neutral-100 z-10 flex items-center gap-3">
+      <div className="sticky top-0 bg-[#f0f0ed]/95 backdrop-blur-sm px-4 py-3 border-b border-neutral-300 z-10 flex items-center gap-3">
         <button
           onClick={() => router.push('/')}
           className="text-neutral-400 hover:text-neutral-700 transition-colors"
@@ -96,10 +96,14 @@ function DeepDiveContent() {
               className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
                 msg.role === 'user'
                   ? 'bg-blue-600 text-white rounded-br-sm'
-                  : 'bg-white border border-neutral-100 text-neutral-800 rounded-bl-sm shadow-sm'
+                  : 'bg-white border border-neutral-200 text-neutral-800 rounded-bl-sm shadow-sm'
               }`}
             >
-              {msg.content}
+              {msg.role === 'assistant'
+                ? msg.content.split('\n\n').map((para, j) => (
+                    <p key={j} className={j > 0 ? 'mt-3' : ''}>{para}</p>
+                  ))
+                : msg.content}
             </div>
           </div>
         ))}
@@ -148,7 +152,7 @@ function DeepDiveContent() {
       </div>
 
       {/* Input */}
-      <div className="sticky bottom-0 bg-neutral-50/90 backdrop-blur-sm px-4 py-3 border-t border-neutral-100">
+      <div className="sticky bottom-0 bg-[#f0f0ed]/95 backdrop-blur-sm px-4 py-3 border-t border-neutral-300">
         <form
           onSubmit={(e) => { e.preventDefault(); sendMessage(input) }}
           className="flex gap-2"
