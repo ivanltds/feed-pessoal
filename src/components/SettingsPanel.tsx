@@ -83,10 +83,10 @@ export default function SettingsPanel() {
 
       {/* Drawer */}
       {open && (
-        <div className="fixed inset-0 z-50 flex justify-end">
-          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setOpen(false)} />
+        <div className="fixed inset-0 flex justify-end" style={{ zIndex: 9999 }}>
+          <div className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
 
-          <div className="relative bg-white w-full sm:max-w-sm h-full overflow-y-auto shadow-2xl flex flex-col">
+          <div className="relative bg-white w-full sm:max-w-sm h-full overflow-y-auto shadow-2xl flex flex-col" style={{ zIndex: 10000 }}>
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100">
               <h2 className="text-base font-semibold text-neutral-900">Preferências</h2>

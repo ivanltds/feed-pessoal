@@ -87,7 +87,7 @@ export default function EditionFeed({ items, date, userId }: Props) {
   return (
     <div className="min-h-screen">
       {/* ── Header ── */}
-      <header className="sticky top-0 z-10 bg-[#f0f0ed]/95 backdrop-blur-sm border-b border-neutral-300">
+      <header className="sticky top-0 bg-[#f0f0ed]/95 backdrop-blur-sm border-b border-neutral-300" style={{ zIndex: 10 }}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
           <div>
             <p className="text-xs font-semibold text-neutral-400 uppercase tracking-widest">feed pessoal</p>
