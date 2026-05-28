@@ -17,12 +17,19 @@ export default function SettingsPanel() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
+  const [loadError, setLoadError] = useState(false)
+
   // Carrega prefs apenas quando o drawer abre
   useEffect(() => {
     if (!open || prefs) return
+    setLoadError(false)
     fetch('/api/user')
       .then((r) => r.json())
-      .then((data) => { if (!data.error) setPrefs(data) })
+      .then((data) => {
+        if (data.error) { setLoadError(true); return }
+        setPrefs(data)
+      })
+      .catch(() => setLoadError(true))
   }, [open])
 
   const toggleTopic = (topic: string) => {
@@ -79,7 +86,7 @@ export default function SettingsPanel() {
         <div className="fixed inset-0 z-50 flex justify-end">
           <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setOpen(false)} />
 
-          <div className="relative bg-white w-full max-w-sm h-full overflow-y-auto shadow-2xl flex flex-col">
+          <div className="relative bg-white w-full sm:max-w-sm h-full overflow-y-auto shadow-2xl flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100">
               <h2 className="text-base font-semibold text-neutral-900">Preferências</h2>
@@ -91,7 +98,17 @@ export default function SettingsPanel() {
             </div>
 
             {/* Conteúdo */}
-            {!prefs ? (
+            {loadError ? (
+              <div className="flex-1 flex flex-col items-center justify-center gap-3 px-5 text-center">
+                <p className="text-sm text-neutral-500">Não foi possível carregar suas preferências.</p>
+                <button
+                  onClick={() => { setLoadError(false); setPrefs(null) }}
+                  className="text-sm text-blue-600 hover:underline"
+                >
+                  Tentar novamente
+                </button>
+              </div>
+            ) : !prefs ? (
               <div className="flex-1 flex items-center justify-center">
                 <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
               </div>
