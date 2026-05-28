@@ -61,7 +61,13 @@ export async function PATCH(req: NextRequest) {
       })
     )
     await prisma.$transaction(weightOps)
+
+    // Invalida a edição de hoje para que seja reconstruída com as novas preferências
+    const today = new Date().toISOString().split('T')[0]
+    await prisma.edition.deleteMany({
+      where: { userId, date: today },
+    })
   }
 
-  return NextResponse.json({ ok: true })
+  return NextResponse.json({ ok: true, editionInvalidated: !!body.topics })
 }

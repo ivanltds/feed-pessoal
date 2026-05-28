@@ -36,7 +36,7 @@ export default function SettingsPanel() {
   const handleSave = async () => {
     if (!prefs) return
     setSaving(true)
-    await fetch('/api/user', {
+    const res = await fetch('/api/user', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -46,9 +46,18 @@ export default function SettingsPanel() {
         topics: prefs.selectedTopics,
       }),
     })
+    const data = await res.json()
     setSaving(false)
     setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
+
+    // Se a edição foi invalidada, recarrega a página após 1s para mostrar nova edição
+    if (data.editionInvalidated) {
+      setTimeout(() => {
+        window.location.href = '/'
+      }, 1200)
+    } else {
+      setTimeout(() => setSaved(false), 2000)
+    }
   }
 
   if (!prefs) return null
