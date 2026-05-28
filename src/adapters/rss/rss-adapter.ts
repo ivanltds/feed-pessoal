@@ -33,7 +33,12 @@ function extractImage(item: Parser.Item & Record<string, unknown>): string | und
 
 export async function fetchFromRss(source: RssSource): Promise<RawNewsItem[]> {
   try {
-    const feed = await parser.parseURL(source.url)
+    // Timeout de 5s por feed para não travar no caso de fonte lenta
+    const feedPromise = parser.parseURL(source.url)
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('timeout')), 5000)
+    )
+    const feed = await Promise.race([feedPromise, timeoutPromise])
     return feed.items.slice(0, 10).map((item) => ({
       sourceId: source.id,
       sourceName: source.name,
