@@ -9,7 +9,10 @@ export async function POST(req: NextRequest) {
   if (!userId) return NextResponse.json({ error: 'userId obrigatório' }, { status: 400 })
 
   try {
-    await buildEditionForUser(userId)
+    const result = await buildEditionForUser(userId)
+    if (result === 'no_topics') {
+      return NextResponse.json({ ok: false, reason: 'no_topics' }, { status: 422 })
+    }
     return NextResponse.json({ ok: true })
   } catch (err) {
     console.error('[build-edition] Erro:', err)

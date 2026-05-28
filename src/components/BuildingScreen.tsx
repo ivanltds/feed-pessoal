@@ -55,6 +55,12 @@ export default function BuildingScreen({ userId }: { userId: string }) {
             window.location.reload()
           }
         } else {
+          const data = await res.json().catch(() => ({}))
+          if ((data as { reason?: string }).reason === 'no_topics') {
+            // Usuário sem tópicos configurados → volta para onboarding
+            window.location.href = '/onboarding'
+            return
+          }
           setError(true)
         }
       } catch {

@@ -5,7 +5,9 @@ import { normalizeTitles } from './title-normalizer'
 import { rankItems, type TopicWeights } from './ranker'
 import type { RawNewsItem } from '@/domain/news/types'
 
-export async function buildEditionForUser(userId: string): Promise<void> {
+export type BuildResult = 'success' | 'already_exists' | 'no_topics' | 'no_items'
+
+export async function buildEditionForUser(userId: string): Promise<BuildResult> {
   const today = new Date().toISOString().split('T')[0]
 
   // verifica se já existe edição de hoje
@@ -14,7 +16,7 @@ export async function buildEditionForUser(userId: string): Promise<void> {
   })
   if (existing) {
     console.log(`[EditionBuilder] Edição de ${today} já existe para ${userId}`)
-    return
+    return 'already_exists'
   }
 
   // busca pesos de tópico do usuário
@@ -37,7 +39,7 @@ export async function buildEditionForUser(userId: string): Promise<void> {
 
   if (activeTopics.length === 0) {
     console.warn(`[EditionBuilder] Usuário ${userId} sem tópicos configurados`)
-    return
+    return 'no_topics'
   }
 
   // busca notícias de todas as fontes ativas dos tópicos do usuário
@@ -48,7 +50,7 @@ export async function buildEditionForUser(userId: string): Promise<void> {
 
   if (rawItems.length === 0) {
     console.error('[EditionBuilder] Nenhum item encontrado nas fontes')
-    return
+    return 'no_items'
   }
 
   // rankeia e seleciona 7 itens
@@ -81,6 +83,7 @@ export async function buildEditionForUser(userId: string): Promise<void> {
   })
 
   console.log(`[EditionBuilder] Edição ${edition.id} criada para ${userId} com ${rankedItems.length} itens`)
+  return 'success'
 }
 
 export async function getTodaysEdition(userId: string) {
