@@ -173,6 +173,21 @@ export default function EditionFeed({ items, date, userId }: Props) {
           // No desktop, primeiros 2 itens do 1º tópico já estão no sidebar
           const desktopItems = topicIdx === 0 ? allItems.slice(2) : allItems
 
+          // Separa itens com e sem foto para tratamentos distintos
+          const withPhoto  = desktopItems.filter(i => i.imageUrl)
+          const noPhoto    = desktopItems.filter(i => !i.imageUrl)
+
+          // Calcula colspan para evitar órfãos no grid de 4 colunas
+          const COLS = 4
+          const orphans = withPhoto.length % COLS
+          const getColSpan = (idx: number) => {
+            if (orphans === 0) return 1
+            const firstOrphanIdx = withPhoto.length - orphans
+            if (idx < firstOrphanIdx) return 1
+            // distribui os órfãos para preencher as 4 colunas
+            return Math.floor(COLS / orphans)
+          }
+
           return (
             <div key={topic} className="mb-12 sm:mb-16">
               {/* Cabeçalho da seção */}
@@ -182,13 +197,39 @@ export default function EditionFeed({ items, date, userId }: Props) {
                 </p>
               </div>
 
-              {/* Desktop: grid de tiles */}
+              {/* Desktop */}
               <div className="hidden md:block">
-                {desktopItems.length > 0 && (
-                  <div className="grid grid-cols-4 gap-8">
-                    {desktopItems.map((item) => (
-                      <div key={item.id} data-item-id={item.id}>
-                        <NewsCard item={item} variant="tile" />
+
+                {/* Grid de tiles — só itens com foto */}
+                {withPhoto.length > 0 && (
+                  <div className="grid grid-cols-4 gap-8 mb-0">
+                    {withPhoto.map((item, idx) => {
+                      const span = getColSpan(idx)
+                      return (
+                        <div
+                          key={item.id}
+                          data-item-id={item.id}
+                          style={{ gridColumn: span > 1 ? `span ${span}` : undefined }}
+                        >
+                          <NewsCard item={item} variant={span >= 2 ? 'secondary' : 'tile'} />
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {/* Lista editorial — itens sem foto */}
+                {noPhoto.length > 0 && (
+                  <div style={{ marginTop: withPhoto.length > 0 ? '2rem' : 0 }}>
+                    {noPhoto.map((item, idx) => (
+                      <div
+                        key={item.id}
+                        data-item-id={item.id}
+                        style={{
+                          borderTop: idx === 0 && withPhoto.length === 0 ? 'none' : '1px solid #E0DED8',
+                        }}
+                      >
+                        <NewsCard item={item} variant="compact" />
                       </div>
                     ))}
                   </div>
