@@ -28,26 +28,33 @@ function timeAgo(date: Date): string {
 }
 
 function Img({ src, aspect, className }: { src: string; aspect: string; className?: string }) {
-  const [failed, setFailed] = useState(false)
-  if (failed) return null
+  const [status, setStatus] = useState<'loading' | 'loaded' | 'failed'>('loading')
+  if (status === 'failed') return null
   return (
     <div className={`w-full overflow-hidden bg-[#E3E2DC] ${aspect}`}>
       <img
         src={src}
         alt=""
-        onError={() => setFailed(true)}
-        className={className ?? 'w-full h-full object-cover'}
+        onLoad={() => setStatus('loaded')}
+        onError={() => setStatus('failed')}
+        className={`${className ?? 'w-full h-full object-cover'} transition-opacity duration-300 ${status === 'loaded' ? 'opacity-100' : 'opacity-0'}`}
       />
     </div>
   )
 }
 
 function CompactImg({ src }: { src: string }) {
-  const [failed, setFailed] = useState(false)
-  if (failed) return null
+  const [status, setStatus] = useState<'loading' | 'loaded' | 'failed'>('loading')
+  if (status === 'failed') return null
   return (
     <div className="w-[68px] h-[68px] shrink-0 overflow-hidden bg-[#E3E2DC]">
-      <img src={src} alt="" onError={() => setFailed(true)} className="w-full h-full object-cover" />
+      <img
+        src={src}
+        alt=""
+        onLoad={() => setStatus('loaded')}
+        onError={() => setStatus('failed')}
+        className={`w-full h-full object-cover transition-opacity duration-300 ${status === 'loaded' ? 'opacity-100' : 'opacity-0'}`}
+      />
     </div>
   )
 }
