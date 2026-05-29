@@ -1,14 +1,14 @@
-import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { getTodaysEdition } from '@/services/edition-builder'
 import EditionFeed from '@/components/EditionFeed'
 import BuildingScreen from '@/components/BuildingScreen'
+import LandingPage from '@/components/LandingPage'
 
 export default async function HomePage() {
   const cookieStore = await cookies()
   const userId = cookieStore.get('userId')?.value
 
-  if (!userId) redirect('/onboarding')
+  if (!userId) return <LandingPage />
 
   const edition = await getTodaysEdition(userId)
 
