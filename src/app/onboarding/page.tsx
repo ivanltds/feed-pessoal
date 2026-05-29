@@ -30,13 +30,19 @@ function OnboardingForm() {
     )
   }
 
-  const handleSubmit = async () => {
-    if (!email || selectedTopics.length === 0) return
+  const handleSubmit = async (withEmail: boolean) => {
+    if (selectedTopics.length === 0) return
     setLoading(true)
     const res = await fetch('/api/onboarding', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, name, topics: selectedTopics, editionHour, language }),
+      body: JSON.stringify({
+        email: withEmail && email ? email : undefined,
+        name: name || undefined,
+        topics: selectedTopics,
+        editionHour,
+        language,
+      }),
     })
     const data = await res.json()
     if (data.userId) router.push('/')
@@ -48,7 +54,6 @@ function OnboardingForm() {
       className="min-h-screen flex flex-col items-center justify-center px-6 py-16"
       style={{ background: '#F2F1ED' }}
     >
-
       <div className="w-full max-w-sm">
 
         {/* Marca + passo */}
@@ -136,17 +141,17 @@ function OnboardingForm() {
           </div>
         )}
 
-        {/* ── Step 3: Email ────────────────────────────────────────────── */}
+        {/* ── Step 3: Email (opcional) ─────────────────────────────────── */}
         {step === 'email' && (
           <div>
             <h1 className="text-2xl font-bold text-[#111] leading-tight mb-2">
-              Último passo
+              Receber por email?
             </h1>
-            <p className="text-sm text-[#9E9E9E] mb-10">
-              Enviaremos sua edição diária para esse email.
+            <p className="text-sm mb-8" style={{ color: '#9E9E9E', lineHeight: 1.6 }}>
+              Deixe seu email e entregamos sua edição direto na caixa de entrada. Opcional — você pode usar o feed só pelo navegador.
             </p>
 
-            <div className="space-y-6 mb-10">
+            <div className="space-y-6 mb-8">
               <div>
                 <label className="text-xs text-[#9E9E9E] block mb-1">Nome (opcional)</label>
                 <input
@@ -161,7 +166,7 @@ function OnboardingForm() {
                 />
               </div>
               <div>
-                <label className="text-xs text-[#9E9E9E] block mb-1">Email</label>
+                <label className="text-xs text-[#9E9E9E] block mb-1">Email (opcional)</label>
                 <input
                   type="email"
                   placeholder="seu@email.com"
@@ -175,17 +180,32 @@ function OnboardingForm() {
               </div>
             </div>
 
+            {/* CTA principal: com email se preenchido, sem se não */}
             <button
-              onClick={handleSubmit}
-              disabled={!email || loading}
-              className="w-full py-3.5 text-sm font-medium text-white transition-opacity"
+              onClick={() => handleSubmit(true)}
+              disabled={loading}
+              className="w-full py-3.5 text-sm font-medium text-white transition-opacity mb-3"
               style={{
                 background: '#111',
-                opacity: !email || loading ? 0.35 : 1,
+                opacity: loading ? 0.4 : 1,
               }}
             >
-              {loading ? 'Criando sua conta…' : 'Começar'}
+              {loading ? 'Criando seu feed…' : email ? 'Começar e receber por email' : 'Começar'}
             </button>
+
+            {/* Pular email — só aparece se não preencheu ainda */}
+            {!email && (
+              <button
+                onClick={() => handleSubmit(false)}
+                disabled={loading}
+                className="w-full py-2 text-xs transition-colors"
+                style={{ color: '#9E9E9E' }}
+                onMouseEnter={(e) => { e.currentTarget.style.color = '#111' }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = '#9E9E9E' }}
+              >
+                Usar só pelo navegador, sem email
+              </button>
+            )}
           </div>
         )}
       </div>

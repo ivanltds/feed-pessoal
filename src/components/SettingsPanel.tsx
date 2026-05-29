@@ -19,7 +19,7 @@ const LANGUAGES: { code: string; label: string; native: string }[] = [
 
 interface UserPrefs {
   name: string
-  email: string
+  email: string | null
   editionHour: 7 | 19
   language: string
   selectedTopics: string[]
@@ -170,12 +170,16 @@ export default function SettingsPanel() {
                         />
                       </div>
                       <div>
-                        <label className="text-xs text-[#9E9E9E] block mb-1">Email</label>
+                        <div className="flex items-baseline justify-between mb-1">
+                          <label className="text-xs text-[#9E9E9E]">Email</label>
+                          <span className="text-[10px] text-[#C0BEB8]">para receber por email</span>
+                        </div>
                         <input
                           type="email"
-                          value={prefs.email}
-                          onChange={(e) => setPrefs({ ...prefs, email: e.target.value })}
-                          className="w-full text-sm text-[#111] bg-transparent outline-none py-2"
+                          value={prefs.email ?? ''}
+                          onChange={(e) => setPrefs({ ...prefs, email: e.target.value || null })}
+                          placeholder="seu@email.com"
+                          className="w-full text-sm text-[#111] placeholder:text-[#C0BEB8] bg-transparent outline-none py-2"
                           style={{ borderBottom: '1px solid #E0DED8' }}
                           onFocus={(e) => { e.target.style.borderBottomColor = '#111' }}
                           onBlur={(e) => { e.target.style.borderBottomColor = '#E0DED8' }}

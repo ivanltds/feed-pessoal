@@ -9,7 +9,7 @@ datasource db {
 
 model User {
   id           String   @id @default(cuid())
-  email        String   @unique
+  email        String?  @unique
   name         String?
   editionHour  Int      @default(7)   // 7 = 7h da manhã, 19 = 19h
   language     String   @default("pt-BR")

@@ -6,25 +6,38 @@ const UNSELECTED_WEIGHT = 1.0
 
 export async function POST(req: NextRequest) {
   const { email, name, topics, editionHour, language } = await req.json() as {
-    email: string
+    email?: string
     name?: string
     topics: string[]
     editionHour: number
     language?: string
   }
 
-  if (!email || !topics?.length) {
+  if (!topics?.length) {
     return NextResponse.json({ error: 'Dados inválidos' }, { status: 400 })
   }
 
   const ALL_TOPICS = ['Tecnologia', 'Economia', 'Geopolítica', 'Ciência', 'Brasil', 'Mundo', 'Cultura', 'Esportes']
+  const userData = {
+    name: name || undefined,
+    editionHour,
+    language: language ?? 'pt-BR',
+  }
 
-  // cria ou atualiza usuário
-  const user = await prisma.user.upsert({
-    where: { email },
-    update: { name: name ?? undefined, editionHour, ...(language ? { language } : {}) },
-    create: { email, name: name ?? undefined, editionHour, language: language ?? 'pt-BR' },
-  })
+  // Se email fornecido: upsert por email (preserva conta existente)
+  // Se não: cria usuário novo sem email
+  let user
+  if (email) {
+    user = await prisma.user.upsert({
+      where: { email },
+      update: { ...userData, email },
+      create: { email, ...userData },
+    })
+  } else {
+    user = await prisma.user.create({
+      data: userData,
+    })
+  }
 
   // inicializa pesos: selecionados = 5, demais = 1
   const weightOps = ALL_TOPICS.map((topic) =>
@@ -45,7 +58,7 @@ export async function POST(req: NextRequest) {
   response.cookies.set('userId', user.id, {
     path: '/',
     maxAge: 60 * 60 * 24 * 365, // 1 ano
-    httpOnly: false,             // precisa ser lido no cliente também
+    httpOnly: false,
     sameSite: 'lax',
   })
   return response
