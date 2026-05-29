@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 interface NewsItem {
   id: string
@@ -27,6 +27,9 @@ function timeAgo(date: Date): string {
 }
 
 export default function NewsModal({ item, onClose }: Props) {
+  const [questions, setQuestions] = useState<string[]>([])
+  const [loadingQ, setLoadingQ] = useState(true)
+
   // Fecha com ESC
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
@@ -40,6 +43,20 @@ export default function NewsModal({ item, onClose }: Props) {
     return () => { document.body.style.overflow = '' }
   }, [])
 
+  // Busca perguntas ao abrir
+  useEffect(() => {
+    setLoadingQ(true)
+    fetch('/api/questions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ newsItemId: item.id }),
+    })
+      .then((r) => r.json())
+      .then((data) => setQuestions(data.questions ?? []))
+      .catch(() => setQuestions([]))
+      .finally(() => setLoadingQ(false))
+  }, [item.id])
+
   return (
     <div
       className="fixed inset-0 flex items-end sm:items-center justify-center"
@@ -50,7 +67,7 @@ export default function NewsModal({ item, onClose }: Props) {
         className="relative w-full sm:max-w-xl mx-auto overflow-y-auto"
         style={{
           background: '#F2F1ED',
-          maxHeight: '85vh',
+          maxHeight: '90vh',
           borderTop: '1px solid #E0DED8',
           animation: 'slideUp 0.25s ease both',
         }}
@@ -60,6 +77,10 @@ export default function NewsModal({ item, onClose }: Props) {
           @keyframes slideUp {
             from { opacity: 0; transform: translateY(16px); }
             to   { opacity: 1; transform: translateY(0); }
+          }
+          @keyframes pulse {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 0.8; }
           }
         `}</style>
 
@@ -105,11 +126,11 @@ export default function NewsModal({ item, onClose }: Props) {
           </h2>
 
           {item.summary ? (
-            <p className="text-sm leading-relaxed mb-6" style={{ color: '#3A3A3A' }}>
+            <p className="text-sm leading-relaxed mb-4" style={{ color: '#3A3A3A' }}>
               {item.summary}
             </p>
           ) : (
-            <p className="text-sm mb-6 italic" style={{ color: '#9E9E9E' }}>
+            <p className="text-sm mb-4 italic" style={{ color: '#9E9E9E' }}>
               Resumo não disponível para esta notícia.
             </p>
           )}
@@ -117,6 +138,54 @@ export default function NewsModal({ item, onClose }: Props) {
           <p className="text-xs mb-6" style={{ color: '#9E9E9E' }}>
             {item.sourceName}&ensp;·&ensp;{timeAgo(item.publishedAt)}
           </p>
+
+          {/* Perguntas */}
+          <div className="mb-6" style={{ borderTop: '1px solid #E0DED8', paddingTop: '20px' }}>
+            <p className="text-[10px] uppercase tracking-[0.18em] mb-3" style={{ color: '#9E9E9E' }}>
+              Explorar mais
+            </p>
+
+            {loadingQ ? (
+              <div className="space-y-2">
+                {[1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    style={{
+                      height: '38px',
+                      background: '#E3E2DC',
+                      borderRadius: '2px',
+                      animation: 'pulse 1.4s ease infinite',
+                      animationDelay: `${i * 0.15}s`,
+                    }}
+                  />
+                ))}
+              </div>
+            ) : questions.length > 0 ? (
+              <div className="space-y-2">
+                {questions.map((q, i) => (
+                  <button
+                    key={i}
+                    className="w-full text-left text-sm py-2.5 px-3 transition-colors duration-150"
+                    style={{
+                      border: '1px solid #E0DED8',
+                      color: '#3A3A3A',
+                      background: 'transparent',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = '#111'
+                      e.currentTarget.style.color = '#111'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = '#E0DED8'
+                      e.currentTarget.style.color = '#3A3A3A'
+                    }}
+                  >
+                    {q}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
 
           <a
             href={item.url}

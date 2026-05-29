@@ -1,4 +1,5 @@
 import { openai } from '@/lib/openai'
+import { SUPPORTED_LANGUAGES } from './summary-generator'
 
 export interface SuggestedQuestion {
   id: string
@@ -8,11 +9,14 @@ export interface SuggestedQuestion {
 }
 
 export async function generateSuggestedQuestions(
-  topNewsItem: { normalizedTitle: string; topic: string; id: string; summary?: string | null }
+  item: { normalizedTitle: string; topic: string; id: string; summary?: string | null; language?: string }
 ): Promise<SuggestedQuestion[]> {
-  const context = topNewsItem.summary
-    ? `Título: ${topNewsItem.normalizedTitle}\nContexto: ${topNewsItem.summary}`
-    : `Título: ${topNewsItem.normalizedTitle}`
+  const language = item.language ?? 'pt-BR'
+  const langName = SUPPORTED_LANGUAGES[language] ?? language
+
+  const context = item.summary
+    ? `Título: ${item.normalizedTitle}\nResumo: ${item.summary}`
+    : `Título: ${item.normalizedTitle}`
 
   try {
     const response = await openai.chat.completions.create({
@@ -21,15 +25,15 @@ export async function generateSuggestedQuestions(
       messages: [
         {
           role: 'system',
-          content: `Você é um jornalista curioso que ajuda leitores a se aprofundarem em notícias.
-Gere exatamente 3 perguntas diferentes sobre o tema da notícia.
-Cada pergunta deve ser:
-- Específica e provocadora (não genérica)
-- Revelar um ângulo diferente: impacto prático, contexto histórico, ou implicação futura
-- Curta (máximo 80 caracteres)
-- Em português do Brasil
+          content: `You are a curious journalist helping readers go deeper on a news story.
+Generate exactly 3 short questions about the news item.
+Each question must:
+- Be specific and thought-provoking (not generic)
+- Reveal a different angle: practical impact, historical context, or future implication
+- Be concise (max 80 characters)
+- Be written in ${langName}
 
-Responda APENAS com as 3 perguntas, uma por linha, sem numeração, sem aspas.`,
+Respond ONLY with the 3 questions, one per line, no numbering, no quotes.`,
         },
         { role: 'user', content: context },
       ],
@@ -43,20 +47,13 @@ Responda APENAS com as 3 perguntas, uma por linha, sem numeração, sem aspas.`,
       .slice(0, 3)
 
     return questions.map((text, i) => ({
-      id: `q-${topNewsItem.id}-${i}`,
+      id: `q-${item.id}-${i}`,
       text,
-      topic: topNewsItem.topic,
-      newsItemId: topNewsItem.id,
+      topic: item.topic,
+      newsItemId: item.id,
     }))
   } catch (error) {
     console.error('[QuestionGenerator] Erro:', error)
-    return [
-      {
-        id: `q-${topNewsItem.id}-0`,
-        text: `O que mais você quer saber sobre ${topNewsItem.topic.toLowerCase()}?`,
-        topic: topNewsItem.topic,
-        newsItemId: topNewsItem.id,
-      },
-    ]
+    return []
   }
 }
