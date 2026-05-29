@@ -30,23 +30,35 @@ function OnboardingForm() {
     )
   }
 
+  const [error, setError] = useState('')
+
   const handleSubmit = async (withEmail: boolean) => {
     if (selectedTopics.length === 0) return
     setLoading(true)
-    const res = await fetch('/api/onboarding', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: withEmail && email ? email : undefined,
-        name: name || undefined,
-        topics: selectedTopics,
-        editionHour,
-        language,
-      }),
-    })
-    const data = await res.json()
-    if (data.userId) router.push('/')
-    setLoading(false)
+    setError('')
+    try {
+      const res = await fetch('/api/onboarding', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: withEmail && email ? email : undefined,
+          name: name || undefined,
+          topics: selectedTopics,
+          editionHour,
+          language,
+        }),
+      })
+      const data = await res.json()
+      if (data.userId) {
+        router.push('/')
+      } else {
+        setError('Algo deu errado. Tente novamente.')
+        setLoading(false)
+      }
+    } catch {
+      setError('Algo deu errado. Tente novamente.')
+      setLoading(false)
+    }
   }
 
   return (
@@ -193,6 +205,10 @@ function OnboardingForm() {
               {loading ? 'Criando seu feed…' : email ? 'Começar e receber por email' : 'Começar'}
             </button>
 
+            {error && (
+              <p className="text-xs text-center mb-2" style={{ color: '#E05A5A' }}>{error}</p>
+            )}
+
             {/* Pular email — só aparece se não preencheu ainda */}
             {!email && (
               <button
@@ -203,7 +219,7 @@ function OnboardingForm() {
                 onMouseEnter={(e) => { e.currentTarget.style.color = '#111' }}
                 onMouseLeave={(e) => { e.currentTarget.style.color = '#9E9E9E' }}
               >
-                Usar só pelo navegador, sem email
+                Agora não
               </button>
             )}
           </div>
