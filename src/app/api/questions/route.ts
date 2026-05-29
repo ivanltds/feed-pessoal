@@ -24,5 +24,5 @@ export async function POST(req: NextRequest) {
     language: user?.language ?? 'pt-BR',
   })
 
-  return NextResponse.json({ questions: questions.map((q) => q.text) })
+  return NextResponse.json({ questions })
 }

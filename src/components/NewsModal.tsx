@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import type { SuggestedQuestion } from '@/services/question-generator'
 
 interface NewsItem {
   id: string
@@ -27,7 +28,7 @@ function timeAgo(date: Date): string {
 }
 
 export default function NewsModal({ item, onClose }: Props) {
-  const [questions, setQuestions] = useState<string[]>([])
+  const [questions, setQuestions] = useState<SuggestedQuestion[]>([])
   const [loadingQ, setLoadingQ] = useState(true)
 
   // Fecha com ESC
@@ -162,9 +163,9 @@ export default function NewsModal({ item, onClose }: Props) {
               </div>
             ) : questions.length > 0 ? (
               <div className="space-y-2">
-                {questions.map((q, i) => (
+                {questions.map((q) => (
                   <button
-                    key={i}
+                    key={q.id}
                     className="w-full text-left text-sm py-2.5 px-3 transition-colors duration-150"
                     style={{
                       border: '1px solid #E0DED8',
@@ -180,7 +181,7 @@ export default function NewsModal({ item, onClose }: Props) {
                       e.currentTarget.style.color = '#3A3A3A'
                     }}
                   >
-                    {q}
+                    {q.text}
                   </button>
                 ))}
               </div>
