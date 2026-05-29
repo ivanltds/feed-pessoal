@@ -5,11 +5,12 @@ const DEFAULT_WEIGHT = 5.0
 const UNSELECTED_WEIGHT = 1.0
 
 export async function POST(req: NextRequest) {
-  const { email, name, topics, editionHour } = await req.json() as {
+  const { email, name, topics, editionHour, language } = await req.json() as {
     email: string
     name?: string
     topics: string[]
     editionHour: number
+    language?: string
   }
 
   if (!email || !topics?.length) {
@@ -21,8 +22,8 @@ export async function POST(req: NextRequest) {
   // cria ou atualiza usuário
   const user = await prisma.user.upsert({
     where: { email },
-    update: { name: name ?? undefined, editionHour },
-    create: { email, name: name ?? undefined, editionHour },
+    update: { name: name ?? undefined, editionHour, ...(language ? { language } : {}) },
+    create: { email, name: name ?? undefined, editionHour, language: language ?? 'pt-BR' },
   })
 
   // inicializa pesos: selecionados = 5, demais = 1

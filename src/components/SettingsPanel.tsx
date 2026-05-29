@@ -4,10 +4,24 @@ import { useEffect, useState } from 'react'
 
 const ALL_TOPICS = ['Tecnologia', 'Economia', 'Geopolítica', 'Ciência', 'Brasil', 'Mundo', 'Cultura', 'Esportes']
 
+const LANGUAGES: { code: string; label: string; native: string }[] = [
+  { code: 'pt-BR', label: 'Português',   native: 'Brasil' },
+  { code: 'pt-PT', label: 'Português',   native: 'Portugal' },
+  { code: 'en',    label: 'English',     native: 'English' },
+  { code: 'es',    label: 'Español',     native: 'Español' },
+  { code: 'fr',    label: 'Français',    native: 'Français' },
+  { code: 'de',    label: 'Deutsch',     native: 'Deutsch' },
+  { code: 'ja',    label: '日本語',       native: '日本語' },
+  { code: 'zh',    label: '中文',         native: '中文' },
+  { code: 'ar',    label: 'العربية',     native: 'العربية' },
+  { code: 'hi',    label: 'हिन्दी',       native: 'हिन्दी' },
+]
+
 interface UserPrefs {
   name: string
   email: string
   editionHour: 7 | 19
+  language: string
   selectedTopics: string[]
 }
 
@@ -25,7 +39,7 @@ export default function SettingsPanel() {
       .then((r) => r.json())
       .then((data) => {
         if (data.error) { setLoadError(true); return }
-        setPrefs(data)
+        setPrefs({ ...data, language: data.language ?? 'pt-BR' })
       })
       .catch(() => setLoadError(true))
   }, [open, prefs])
@@ -50,6 +64,7 @@ export default function SettingsPanel() {
         name: prefs.name,
         email: prefs.email,
         editionHour: prefs.editionHour,
+        language: prefs.language,
         topics: prefs.selectedTopics,
       }),
     })
@@ -88,7 +103,6 @@ export default function SettingsPanel() {
           e.currentTarget.style.color = '#5C5C5C'
         }}
       >
-        {/* Ícone sliders — mais editorial que engrenagem */}
         <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}>
           <path strokeLinecap="round" d="M4 6h16M4 12h16M4 18h16" />
           <circle cx="9" cy="6" r="2" fill="currentColor" stroke="none" />
@@ -111,13 +125,10 @@ export default function SettingsPanel() {
             className="relative flex flex-col h-full overflow-y-auto w-full sm:max-w-sm"
             style={{ background: '#FFFFFF', zIndex: 10000, borderLeft: '1px solid #E0DED8' }}
           >
-            {/* Header do drawer */}
+            {/* Header */}
             <div className="flex items-center justify-between px-6 py-5" style={{ borderBottom: '1px solid #E0DED8' }}>
               <span className="text-sm font-semibold text-[#111] tracking-tight">Preferências</span>
-              <button
-                onClick={() => setOpen(false)}
-                className="text-[#9E9E9E] hover:text-[#111] transition-colors"
-              >
+              <button onClick={() => setOpen(false)} className="text-[#9E9E9E] hover:text-[#111] transition-colors">
                 <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -128,23 +139,13 @@ export default function SettingsPanel() {
             {loadError ? (
               <div className="flex-1 flex flex-col items-center justify-center gap-4 px-6 text-center">
                 <p className="text-sm text-[#9E9E9E]">Não foi possível carregar suas preferências.</p>
-                <button
-                  onClick={() => { setLoadError(false); setPrefs(null) }}
-                  className="text-xs text-[#111] underline underline-offset-2"
-                >
+                <button onClick={() => { setLoadError(false); setPrefs(null) }} className="text-xs text-[#111] underline underline-offset-2">
                   Tentar novamente
                 </button>
               </div>
             ) : !prefs ? (
               <div className="flex-1 flex items-center justify-center">
-                <div
-                  className="w-5 h-5 rounded-full"
-                  style={{
-                    border: '2px solid #E0DED8',
-                    borderTopColor: '#111',
-                    animation: 'spin 0.8s linear infinite',
-                  }}
-                />
+                <div className="w-5 h-5 rounded-full" style={{ border: '2px solid #E0DED8', borderTopColor: '#111', animation: 'spin 0.8s linear infinite' }} />
                 <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
               </div>
             ) : (
@@ -180,6 +181,31 @@ export default function SettingsPanel() {
                           onBlur={(e) => { e.target.style.borderBottomColor = '#E0DED8' }}
                         />
                       </div>
+                    </div>
+                  </section>
+
+                  {/* Língua dos resumos */}
+                  <section>
+                    <p className="text-[10px] uppercase tracking-[0.18em] text-[#9E9E9E] mb-1">Língua dos resumos</p>
+                    <p className="text-xs text-[#9E9E9E] mb-4">Os resumos serão gerados e traduzidos para o idioma escolhido.</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {LANGUAGES.map((lang) => (
+                        <button
+                          key={lang.code}
+                          onClick={() => setPrefs({ ...prefs, language: lang.code })}
+                          className="py-2.5 px-3 text-left transition-colors duration-150"
+                          style={{
+                            background: prefs.language === lang.code ? '#111' : 'transparent',
+                            color: prefs.language === lang.code ? '#FFF' : '#5C5C5C',
+                            border: `1px solid ${prefs.language === lang.code ? '#111' : '#E0DED8'}`,
+                          }}
+                        >
+                          <span className="text-sm block">{lang.native}</span>
+                          {(lang.code === 'pt-BR' || lang.code === 'pt-PT') && (
+                            <span className="text-[10px] opacity-60">{lang.native === 'Brasil' ? 'Brasil' : 'Portugal'}</span>
+                          )}
+                        </button>
+                      ))}
                     </div>
                   </section>
 
@@ -226,7 +252,7 @@ export default function SettingsPanel() {
                   </section>
                 </div>
 
-                {/* Rodapé com salvar */}
+                {/* Rodapé */}
                 <div className="px-6 py-5" style={{ borderTop: '1px solid #E0DED8' }}>
                   <button
                     onClick={handleSave}

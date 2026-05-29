@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 const TOPICS = ['Tecnologia', 'Economia', 'Geopolítica', 'Ciência', 'Brasil', 'Mundo', 'Cultura', 'Esportes']
 
@@ -13,14 +13,16 @@ const STEP_LABELS: Record<Step, string> = {
   email: '03',
 }
 
-export default function OnboardingPage() {
+function OnboardingForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [step, setStep] = useState<Step>('topics')
   const [selectedTopics, setSelectedTopics] = useState<string[]>([])
   const [editionHour, setEditionHour] = useState<7 | 19>(7)
   const [email, setEmail] = useState('')
   const [name, setName] = useState('')
   const [loading, setLoading] = useState(false)
+  const language = searchParams.get('lang') ?? 'pt-BR'
 
   const toggleTopic = (topic: string) => {
     setSelectedTopics((prev) =>
@@ -34,7 +36,7 @@ export default function OnboardingPage() {
     const res = await fetch('/api/onboarding', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, name, topics: selectedTopics, editionHour }),
+      body: JSON.stringify({ email, name, topics: selectedTopics, editionHour, language }),
     })
     const data = await res.json()
     if (data.userId) router.push('/')
@@ -46,6 +48,7 @@ export default function OnboardingPage() {
       className="min-h-screen flex flex-col items-center justify-center px-6 py-16"
       style={{ background: '#F2F1ED' }}
     >
+
       <div className="w-full max-w-sm">
 
         {/* Marca + passo */}
@@ -187,5 +190,13 @@ export default function OnboardingPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function OnboardingPage() {
+  return (
+    <Suspense fallback={<div style={{ background: '#F2F1ED', minHeight: '100vh' }} />}>
+      <OnboardingForm />
+    </Suspense>
   )
 }

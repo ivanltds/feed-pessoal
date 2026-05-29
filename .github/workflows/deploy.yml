@@ -3,7 +3,7 @@ name: Deploy to Vercel Production
 on:
   push:
     branches:
-      - main
+      - master
 
 env:
   VERCEL_ORG_ID: team_D5tc8Nd9CioklxlV382pkRnw

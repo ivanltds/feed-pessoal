@@ -39,7 +39,7 @@ export async function fetchFromRss(source: RssSource): Promise<RawNewsItem[]> {
       setTimeout(() => reject(new Error('timeout')), 5000)
     )
     const feed = await Promise.race([feedPromise, timeoutPromise])
-    return feed.items.slice(0, 10).map((item) => ({
+    return feed.items.slice(0, 20).map((item) => ({
       sourceId: source.id,
       sourceName: source.name,
       topic: source.topic,

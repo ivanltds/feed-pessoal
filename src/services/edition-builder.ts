@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { fetchFromRss } from '@/adapters/rss/rss-adapter'
 import { getSourcesByTopics } from '@/adapters/sources'
 import { normalizeTitles } from './title-normalizer'
+import { generateSummaries } from './summary-generator'
 import { rankItems, type TopicWeights } from './ranker'
 import type { RawNewsItem } from '@/domain/news/types'
 
@@ -19,8 +20,12 @@ export async function buildEditionForUser(userId: string): Promise<BuildResult> 
     return 'already_exists'
   }
 
-  // busca pesos de tópico do usuário
-  const weights = await prisma.userTopicWeight.findMany({ where: { userId } })
+  // busca usuário (língua) e pesos de tópico em paralelo
+  const [user, weights] = await Promise.all([
+    prisma.user.findUnique({ where: { id: userId }, select: { language: true } }),
+    prisma.userTopicWeight.findMany({ where: { userId } }),
+  ])
+  const language = user?.language ?? 'pt-BR'
   const topicWeights: TopicWeights = {}
   weights.forEach((w) => { topicWeights[w.topic] = w.weight })
 
@@ -56,13 +61,19 @@ export async function buildEditionForUser(userId: string): Promise<BuildResult> 
   // rankeia e seleciona 7 itens
   const rankedItems = rankItems(rawItems, topicWeights)
 
-  // normaliza títulos em batch
+  // normaliza títulos e gera resumos em paralelo
   const originalTitles = rankedItems.map((i) => i.title)
-  const normalizedTitles = await normalizeTitles(originalTitles)
+  const summaryInputs = rankedItems.map((i) => ({ title: i.title, snippet: i.summary }))
+  const [normalizedTitles, summaries] = await Promise.all([
+    normalizeTitles(originalTitles, language),
+    generateSummaries(summaryInputs, language),
+  ])
 
-  // persiste a edição
-  const edition = await prisma.edition.create({
-    data: {
+  // persiste a edição (usa upsert para evitar corrida entre requisições concorrentes)
+  const edition = await prisma.edition.upsert({
+    where: { userId_date: { userId, date: today } },
+    update: {},  // se já existe, não faz nada
+    create: {
       userId,
       date: today,
       items: {
@@ -72,6 +83,7 @@ export async function buildEditionForUser(userId: string): Promise<BuildResult> 
           sourceName: item.sourceName,
           originalTitle: item.title,
           normalizedTitle: normalizedTitles[idx],
+          summary: summaries[idx] || null,
           imageUrl: item.imageUrl,
           url: item.url,
           publishedAt: item.publishedAt,

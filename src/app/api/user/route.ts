@@ -25,6 +25,7 @@ export async function GET() {
     name: user.name,
     email: user.email,
     editionHour: user.editionHour,
+    language: (user as { language?: string }).language ?? 'pt-BR',
     selectedTopics,
   })
 }
@@ -38,20 +39,23 @@ export async function PATCH(req: NextRequest) {
     name?: string
     email?: string
     editionHour?: number
+    language?: string
     topics?: string[]
   }
 
   // Atualiza dados básicos do usuário
-  const updateData: { name?: string; email?: string; editionHour?: number } = {}
+  const updateData: { name?: string; email?: string; editionHour?: number; language?: string } = {}
   if (body.name !== undefined) updateData.name = body.name
   if (body.email !== undefined) updateData.email = body.email
   if (body.editionHour !== undefined) updateData.editionHour = body.editionHour
+  if (body.language !== undefined) updateData.language = body.language
 
   if (Object.keys(updateData).length > 0) {
     await prisma.user.update({ where: { id: userId }, data: updateData })
   }
 
   // Atualiza tópicos se fornecidos
+  let editionInvalidated = false
   if (body.topics) {
     const weightOps = ALL_TOPICS.map((topic) =>
       prisma.userTopicWeight.upsert({
@@ -61,13 +65,15 @@ export async function PATCH(req: NextRequest) {
       })
     )
     await prisma.$transaction(weightOps)
-
-    // Invalida a edição de hoje para que seja reconstruída com as novas preferências
-    const today = new Date().toISOString().split('T')[0]
-    await prisma.edition.deleteMany({
-      where: { userId, date: today },
-    })
+    editionInvalidated = true
   }
 
-  return NextResponse.json({ ok: true, editionInvalidated: !!body.topics })
+  // Invalida edição de hoje se língua ou tópicos mudaram (resumos precisam ser regerados)
+  if (body.language !== undefined || body.topics) {
+    const today = new Date().toISOString().split('T')[0]
+    await prisma.edition.deleteMany({ where: { userId, date: today } })
+    editionInvalidated = true
+  }
+
+  return NextResponse.json({ ok: true, editionInvalidated })
 }

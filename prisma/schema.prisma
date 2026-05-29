@@ -12,6 +12,7 @@ model User {
   email        String   @unique
   name         String?
   editionHour  Int      @default(7)   // 7 = 7h da manhã, 19 = 19h
+  language     String   @default("pt-BR")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -52,6 +53,7 @@ model NewsItem {
   sourceName       String
   originalTitle    String
   normalizedTitle  String
+  summary          String?
   imageUrl         String?
   url              String
   publishedAt      DateTime

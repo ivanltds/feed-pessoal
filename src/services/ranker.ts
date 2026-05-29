@@ -5,8 +5,7 @@ export interface TopicWeights {
 }
 
 const DEFAULT_WEIGHT = 1.0
-const EDITION_SIZE = 7
-const MIN_TOPICS_IN_EDITION = 2
+const MAX_TOTAL = 30        // máximo total de itens na edição
 
 /**
  * Calcula o score de um item baseado em:
@@ -17,9 +16,9 @@ const MIN_TOPICS_IN_EDITION = 2
 function calcScore(item: RawNewsItem, topicWeights: TopicWeights): number {
   const topicWeight = topicWeights[item.topic] ?? DEFAULT_WEIGHT
 
-  // recência: 1.0 = agora, decai linearmente em 24h
+  // recência: 1.0 = agora, decai linearmente em 48h
   const ageHours = (Date.now() - item.publishedAt.getTime()) / (1000 * 60 * 60)
-  const recencyScore = Math.max(0, 1 - ageHours / 48) // zera em 48h
+  const recencyScore = Math.max(0, 1 - ageHours / 48)
 
   // qualidade da fonte (expansível — por ora todas iguais)
   const sourceQuality = 1.0
@@ -28,7 +27,8 @@ function calcScore(item: RawNewsItem, topicWeights: TopicWeights): number {
 }
 
 /**
- * Seleciona os 7 melhores itens garantindo diversidade mínima de tópicos.
+ * Seleciona até 30 itens distribuídos proporcionalmente pelos tópicos ativos.
+ * 1 tópico → 30 itens; 2 tópicos → 15 cada; 6 tópicos → 5 cada.
  */
 export function rankItems(
   candidates: RawNewsItem[],
@@ -37,34 +37,50 @@ export function rankItems(
   // pontua todos os candidatos
   const scored = candidates.map((item) => ({
     ...item,
-    normalizedTitle: item.title, // preenchido após normalização
+    normalizedTitle: item.title,
     score: calcScore(item, topicWeights),
   }))
 
-  // ordena por score decrescente
-  scored.sort((a, b) => b.score - a.score)
+  // deduplica por URL
+  const seen = new Set<string>()
+  const unique = scored.filter((item) => {
+    if (seen.has(item.url)) return false
+    seen.add(item.url)
+    return true
+  })
 
-  const selected: NewsItem[] = []
-  const topicsUsed = new Set<string>()
-
-  // primeira passagem: pega os melhores garantindo diversidade mínima
-  for (const item of scored) {
-    if (selected.length >= EDITION_SIZE) break
-    if (selected.length >= EDITION_SIZE - MIN_TOPICS_IN_EDITION || !topicsUsed.has(item.topic)) {
-      selected.push(item)
-      topicsUsed.add(item.topic)
-    }
+  // agrupa por tópico
+  const byTopic = new Map<string, typeof unique>()
+  for (const item of unique) {
+    const group = byTopic.get(item.topic) ?? []
+    group.push(item)
+    byTopic.set(item.topic, group)
   }
 
-  // segunda passagem: completa se faltou (caso haja poucos tópicos)
-  if (selected.length < EDITION_SIZE) {
-    for (const item of scored) {
-      if (selected.length >= EDITION_SIZE) break
-      if (!selected.includes(item)) selected.push(item)
-    }
+  // calcula cota por tópico dinamicamente: 30 ÷ número de tópicos presentes
+  const numTopics = Math.max(1, byTopic.size)
+  const itemsPerTopic = Math.ceil(MAX_TOTAL / numTopics)
+
+  for (const [topic, items] of byTopic) {
+    byTopic.set(topic, items.sort((a, b) => b.score - a.score).slice(0, itemsPerTopic))
   }
 
-  return selected.slice(0, EDITION_SIZE)
+  // ordena os tópicos pelo score do seu melhor item
+  const topicsByScore = [...byTopic.entries()].sort(
+    (a, b) => (b[1][0]?.score ?? 0) - (a[1][0]?.score ?? 0)
+  )
+
+  // monta lista final: tópico por tópico, respeitando MAX_TOTAL
+  const result: NewsItem[] = []
+  for (const [, items] of topicsByScore) {
+    for (const item of items) {
+      if (result.length >= MAX_TOTAL) break
+      result.push(item)
+    }
+    if (result.length >= MAX_TOTAL) break
+  }
+
+  return result
 }
 
 /**

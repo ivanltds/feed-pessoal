@@ -10,6 +10,7 @@ interface NewsItem {
   topic: string
   sourceName: string
   normalizedTitle: string
+  summary?: string | null
   imageUrl: string | null
   url: string
   publishedAt: Date
@@ -78,6 +79,23 @@ export default function EditionFeed({ items, date, userId }: Props) {
     return () => window.removeEventListener('beforeunload', sendFeedback)
   }, [items, userId])
 
+  // Hero = primeiro item; restante agrupado por tópico (mantendo ordem de chegada)
+  const hero = items[0]
+  const rest = items.slice(1)
+
+  const topicOrder: string[] = []
+  const byTopic: Record<string, NewsItem[]> = {}
+  for (const item of rest) {
+    if (!byTopic[item.topic]) {
+      topicOrder.push(item.topic)
+      byTopic[item.topic] = []
+    }
+    byTopic[item.topic].push(item)
+  }
+
+  // No desktop, o primeiro tópico aparece como sidebar do hero (os 2 primeiros itens)
+  const sidebarItems = topicOrder[0] ? byTopic[topicOrder[0]].slice(0, 2) : []
+
   return (
     <div className="min-h-screen" style={{ background: '#F2F1ED' }}>
 
@@ -91,19 +109,14 @@ export default function EditionFeed({ items, date, userId }: Props) {
           zIndex: 1000,
         }}
       >
-        {/* Linha de cima: marca + botão */}
         <div className="max-w-5xl mx-auto px-5 sm:px-8 flex items-center justify-between" style={{ height: '52px' }}>
-          {/* Marca */}
-          <div className="flex items-center gap-0">
-            <span
-              className="text-base font-bold tracking-tight select-none"
-              style={{ color: '#111', letterSpacing: '-0.02em' }}
-            >
-              feed pessoal
-            </span>
-          </div>
+          <span
+            className="text-base font-bold tracking-tight select-none"
+            style={{ color: '#111', letterSpacing: '-0.02em' }}
+          >
+            feed pessoal
+          </span>
 
-          {/* Data — centro, só desktop */}
           <span
             className="hidden md:block text-xs capitalize"
             style={{ color: '#9E9E9E', position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}
@@ -111,11 +124,9 @@ export default function EditionFeed({ items, date, userId }: Props) {
             {date}
           </span>
 
-          {/* Botão de preferências */}
           <SettingsPanel />
         </div>
 
-        {/* Data — só mobile, abaixo da primeira linha */}
         <div className="md:hidden px-5 pb-2">
           <span className="text-[11px] capitalize" style={{ color: '#9E9E9E' }}>{date}</span>
         </div>
@@ -124,76 +135,85 @@ export default function EditionFeed({ items, date, userId }: Props) {
       {/* ── Feed ─────────────────────────────────────────────────────────── */}
       <main className="max-w-5xl mx-auto px-5 sm:px-8 py-8 sm:py-12">
 
-        {/* MOBILE: hero + lista compacta */}
-        <div className="md:hidden">
-          <div
-            className="pb-6 mb-6"
-            style={{ borderBottom: '1px solid #E0DED8' }}
-            data-item-id={items[0]?.id}
-          >
-            {items[0] && <NewsCard item={items[0]} variant="hero" />}
-          </div>
+        {/* ── Bloco hero ─────────────────────────────────────────────────── */}
+        {hero && (
+          <div className="pb-10 mb-10" style={{ borderBottom: '1px solid #E0DED8' }}>
 
-          <div>
-            {items.slice(1).map((item, idx) => (
-              <div
-                key={item.id}
-                data-item-id={item.id}
-                style={idx < items.slice(1).length - 1 ? { borderBottom: '1px solid #E0DED8' } : {}}
-              >
-                <NewsCard item={item} variant="compact" />
+            {/* Desktop: hero (2/3) + sidebar do 1º tópico (1/3) */}
+            <div className="hidden md:grid gap-10" style={{ gridTemplateColumns: '2fr 1fr' }}>
+              <div data-item-id={hero.id}>
+                <NewsCard item={hero} variant="hero" />
               </div>
-            ))}
-          </div>
-        </div>
 
-        {/* DESKTOP: grade editorial */}
-        <div className="hidden md:block">
-
-          {/* Linha superior: hero (2/3) + sidebar (1/3) */}
-          <div
-            className="grid gap-10 pb-12 mb-12"
-            style={{
-              gridTemplateColumns: '2fr 1fr',
-              borderBottom: '1px solid #E0DED8',
-            }}
-          >
-            {/* Hero */}
-            <div data-item-id={items[0]?.id}>
-              {items[0] && <NewsCard item={items[0]} variant="hero" />}
-            </div>
-
-            {/* Sidebar: itens 2–3 */}
-            <div className="flex flex-col gap-0" style={{ borderLeft: '1px solid #E0DED8', paddingLeft: '2.5rem' }}>
-              {items.slice(1, 3).map((item, idx) => (
-                <div
-                  key={item.id}
-                  data-item-id={item.id}
-                  style={idx === 0 ? {} : { borderTop: '1px solid #E0DED8', paddingTop: '1.5rem' }}
-                  className={idx === 0 ? '' : ''}
-                >
-                  <div className={idx === 0 ? '' : ''}>
-                    <NewsCard item={item} variant="secondary" />
-                  </div>
-                  {idx === 0 && <div style={{ marginBottom: '1.5rem' }} />}
+              {sidebarItems.length > 0 && (
+                <div className="flex flex-col" style={{ borderLeft: '1px solid #E0DED8', paddingLeft: '2.5rem' }}>
+                  {sidebarItems.map((item, idx) => (
+                    <div
+                      key={item.id}
+                      data-item-id={item.id}
+                      style={idx > 0 ? { borderTop: '1px solid #E0DED8', paddingTop: '1.5rem', marginTop: '1.5rem' } : {}}
+                    >
+                      <NewsCard item={item} variant="secondary" />
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
+            </div>
+
+            {/* Mobile: só o hero */}
+            <div className="md:hidden" data-item-id={hero.id}>
+              <NewsCard item={hero} variant="hero" />
             </div>
           </div>
+        )}
 
-          {/* Linha inferior: tiles */}
-          <div className="grid grid-cols-4 gap-8">
-            {items.slice(3).map((item) => (
-              <div key={item.id} data-item-id={item.id}>
-                <NewsCard item={item} variant="tile" />
+        {/* ── Seções por tópico ──────────────────────────────────────────── */}
+        {topicOrder.map((topic, topicIdx) => {
+          const allItems = byTopic[topic]
+          // No desktop, primeiros 2 itens do 1º tópico já estão no sidebar
+          const desktopItems = topicIdx === 0 ? allItems.slice(2) : allItems
+
+          return (
+            <div key={topic} className="mb-12 sm:mb-16">
+              {/* Cabeçalho da seção */}
+              <div className="mb-5 pb-3" style={{ borderBottom: '1px solid #E0DED8' }}>
+                <p className="text-[10px] uppercase tracking-[0.2em]" style={{ color: '#9E9E9E' }}>
+                  {topic}
+                </p>
               </div>
-            ))}
-          </div>
-        </div>
+
+              {/* Desktop: grid de tiles */}
+              <div className="hidden md:block">
+                {desktopItems.length > 0 && (
+                  <div className="grid grid-cols-4 gap-8">
+                    {desktopItems.map((item) => (
+                      <div key={item.id} data-item-id={item.id}>
+                        <NewsCard item={item} variant="tile" />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Mobile: lista compacta */}
+              <div className="md:hidden">
+                {allItems.map((item, idx) => (
+                  <div
+                    key={item.id}
+                    data-item-id={item.id}
+                    style={idx < allItems.length - 1 ? { borderBottom: '1px solid #E0DED8' } : {}}
+                  >
+                    <NewsCard item={item} variant="compact" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })}
 
         {/* Done screen */}
         {doneVisible && (
-          <div className="max-w-lg mx-auto mt-16 sm:mt-20">
+          <div className="max-w-lg mx-auto mt-10 sm:mt-16">
             <DoneScreen userId={userId} topItem={items[0]} />
           </div>
         )}
