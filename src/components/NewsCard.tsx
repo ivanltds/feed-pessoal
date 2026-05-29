@@ -1,5 +1,7 @@
 'use client'
 
+import { useState } from 'react'
+
 interface NewsItem {
   id: string
   topic: string
@@ -12,9 +14,7 @@ interface NewsItem {
 
 interface Props {
   item: NewsItem
-  position: number
-  total: number
-  featured?: boolean
+  variant?: 'hero' | 'secondary' | 'tile' | 'compact'
 }
 
 function timeAgo(date: Date): string {
@@ -25,48 +25,111 @@ function timeAgo(date: Date): string {
   return `${Math.floor(hours / 24)}d`
 }
 
-export default function NewsCard({ item, position, total, featured = false }: Props) {
+// Renderiza imagem; se falhar ou não existir, retorna null (sem container)
+function Img({ src, aspect, className }: { src: string; aspect: string; className?: string }) {
+  const [failed, setFailed] = useState(false)
+  if (failed) return null
   return (
-    <a
-      href={item.url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="group flex flex-col h-full rounded-2xl overflow-hidden bg-white border border-neutral-200 shadow-sm hover:shadow-md transition-all duration-200"
-    >
-      {/* Imagem */}
-      {item.imageUrl && (
-        <div className={`w-full overflow-hidden bg-neutral-100 ${featured ? 'aspect-[16/7]' : 'aspect-[16/9]'}`}>
-          <img
-            src={item.imageUrl}
-            alt=""
-            className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
-            loading="lazy"
-          />
-        </div>
-      )}
+    <div className={`w-full overflow-hidden bg-[#E3E2DC] ${aspect}`}>
+      <img
+        src={src}
+        alt=""
+        onError={() => setFailed(true)}
+        className={className ?? 'w-full h-full object-cover'}
+      />
+    </div>
+  )
+}
 
-      <div className={`flex flex-col flex-1 p-4 ${featured ? 'p-5' : 'p-4'}`}>
-        {/* Tópico + contador */}
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-semibold text-blue-600 uppercase tracking-wide">
-            {item.topic}
-          </span>
-          <span className="text-xs text-neutral-400">{position}/{total}</span>
-        </div>
+function CompactImg({ src }: { src: string }) {
+  const [failed, setFailed] = useState(false)
+  if (failed) return null
+  return (
+    <div className="w-[68px] h-[68px] shrink-0 overflow-hidden bg-[#E3E2DC]">
+      <img src={src} alt="" onError={() => setFailed(true)} className="w-full h-full object-cover" />
+    </div>
+  )
+}
 
-        {/* Título */}
-        <h2 className={`font-semibold leading-snug text-neutral-900 group-hover:text-blue-700 transition-colors flex-1 ${
-          featured ? 'text-lg' : 'text-sm'
-        }`}>
+export default function NewsCard({ item, variant = 'compact' }: Props) {
+  const ago = timeAgo(item.publishedAt)
+
+  // ── Hero ──────────────────────────────────────────────────────────────────
+  if (variant === 'hero') {
+    return (
+      <a href={item.url} target="_blank" rel="noopener noreferrer" className="group block">
+        {item.imageUrl && (
+          <div className="mb-4">
+            <Img
+              src={item.imageUrl}
+              aspect="aspect-[16/9]"
+              className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-700"
+            />
+          </div>
+        )}
+        <p className="text-[10px] uppercase tracking-[0.18em] text-[#9E9E9E] mb-2.5">{item.topic}</p>
+        <h2 className="text-2xl sm:text-3xl font-bold leading-[1.2] text-[#111] group-hover:opacity-60 transition-opacity duration-200 mb-3">
           {item.normalizedTitle}
         </h2>
+        <p className="text-xs text-[#9E9E9E]">{item.sourceName}&ensp;·&ensp;{ago}</p>
+      </a>
+    )
+  }
 
-        {/* Meta */}
-        <div className="flex items-center gap-2 mt-3">
-          <span className="text-xs text-neutral-500">{item.sourceName}</span>
-          <span className="text-neutral-400">·</span>
-          <span className="text-xs text-neutral-500">{timeAgo(item.publishedAt)}</span>
-        </div>
+  // ── Secondary ─────────────────────────────────────────────────────────────
+  if (variant === 'secondary') {
+    return (
+      <a href={item.url} target="_blank" rel="noopener noreferrer" className="group block">
+        {item.imageUrl && (
+          <div className="mb-3">
+            <Img
+              src={item.imageUrl}
+              aspect="aspect-[3/2]"
+              className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-700"
+            />
+          </div>
+        )}
+        <p className="text-[10px] uppercase tracking-[0.18em] text-[#9E9E9E] mb-2">{item.topic}</p>
+        <h2 className="text-base font-semibold leading-snug text-[#111] group-hover:opacity-60 transition-opacity duration-200 mb-2">
+          {item.normalizedTitle}
+        </h2>
+        <p className="text-xs text-[#9E9E9E]">{item.sourceName}&ensp;·&ensp;{ago}</p>
+      </a>
+    )
+  }
+
+  // ── Tile ──────────────────────────────────────────────────────────────────
+  if (variant === 'tile') {
+    return (
+      <a href={item.url} target="_blank" rel="noopener noreferrer" className="group block">
+        {item.imageUrl && (
+          <div className="mb-3">
+            <Img
+              src={item.imageUrl}
+              aspect="aspect-[4/3]"
+              className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-700"
+            />
+          </div>
+        )}
+        <p className="text-[10px] uppercase tracking-[0.18em] text-[#9E9E9E] mb-1.5">{item.topic}</p>
+        <h2 className="text-sm font-semibold leading-snug text-[#111] group-hover:opacity-60 transition-opacity duration-200 mb-1.5">
+          {item.normalizedTitle}
+        </h2>
+        <p className="text-xs text-[#9E9E9E]">{item.sourceName}&ensp;·&ensp;{ago}</p>
+      </a>
+    )
+  }
+
+  // ── Compact (lista mobile) ─────────────────────────────────────────────────
+  return (
+    <a href={item.url} target="_blank" rel="noopener noreferrer" className="group flex items-start gap-4 py-4">
+      {item.imageUrl && <CompactImg src={item.imageUrl} />}
+      <div className="flex-1 min-w-0">
+        <p className="text-[10px] uppercase tracking-[0.18em] text-[#9E9E9E] mb-1">{item.topic}</p>
+        <h2 className="text-sm font-semibold leading-snug text-[#111] group-hover:opacity-60 transition-opacity duration-200 line-clamp-3 mb-1.5">
+          {item.normalizedTitle}
+        </h2>
+        <p className="text-xs text-[#9E9E9E]">{item.sourceName}&ensp;·&ensp;{ago}</p>
       </div>
     </a>
   )

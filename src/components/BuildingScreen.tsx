@@ -21,7 +21,7 @@ const BEHIND_THE_SCENES = [
   },
   {
     title: 'Seus dados ficam só com você',
-    body: 'Nenhum anunciante acessa seu histórico. Suas preferências existem apenas para melhorar seu próprio feed.',
+    body: 'Nenhum anunciante acessa seu histórico. Suas preferências existem apenas para melhorar o seu feed.',
   },
 ]
 
@@ -31,14 +31,10 @@ export default function BuildingScreen({ userId }: { userId: string }) {
   const [showModal, setShowModal] = useState(false)
   const showModalRef = useRef(false)
 
-  // Mantém ref sincronizada para usar dentro do callback assíncrono
-  useEffect(() => {
-    showModalRef.current = showModal
-  }, [showModal])
+  useEffect(() => { showModalRef.current = showModal }, [showModal])
 
   useEffect(() => {
     let cancelled = false
-
     const build = async () => {
       try {
         const res = await fetch('/api/build-edition', {
@@ -49,105 +45,111 @@ export default function BuildingScreen({ userId }: { userId: string }) {
         if (cancelled) return
 
         if (res.ok) {
-          // Se o modal estiver aberto, marca como pronto mas não recarrega ainda
           setReady(true)
-          if (!showModalRef.current) {
-            window.location.reload()
-          }
+          if (!showModalRef.current) window.location.reload()
         } else {
           const data = await res.json().catch(() => ({}))
           const reason = (data as { reason?: string }).reason
           if (reason === 'no_topics') {
-            // Usuário sem tópicos configurados → volta para onboarding
             window.location.href = '/onboarding'
             return
           }
-          // no_items ou outro erro → mostra tela de erro
           setError(true)
         }
       } catch {
         if (!cancelled) setError(true)
       }
     }
-
     build()
     return () => { cancelled = true }
   }, [userId])
 
   const closeModal = () => {
     setShowModal(false)
-    // Se já terminou enquanto o modal estava aberto, recarrega agora
     if (ready) window.location.reload()
   }
 
   return (
-    <>
-      <main className="flex flex-col items-center justify-center min-h-screen p-8 text-center">
-        <div className="w-full max-w-xs space-y-5">
-          {!error ? (
-            <>
-              {/* Spinner em CSS puro para não piscar em re-renders */}
-              <div
-                className="w-8 h-8 rounded-full mx-auto"
-                style={{
-                  border: '2px solid #e5e5e5',
-                  borderTopColor: '#404040',
-                  animation: 'spin 0.8s linear infinite',
-                }}
-              />
-              <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    <div
+      className="min-h-screen flex flex-col items-center justify-center px-6 text-center"
+      style={{ background: '#F2F1ED' }}
+    >
+      <div className="w-full max-w-xs">
+        {!error ? (
+          <>
+            {/* Spinner */}
+            <div
+              className="w-6 h-6 rounded-full mx-auto mb-8"
+              style={{
+                border: '1.5px solid #E0DED8',
+                borderTopColor: '#111',
+                animation: 'spin 0.9s linear infinite',
+              }}
+            />
+            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
-              <div>
-                <h1 className="text-lg font-semibold text-neutral-900">
-                  Preparando sua edição
-                </h1>
-                <p className="text-sm text-neutral-500 mt-1">
-                  Buscando as melhores notícias dos seus tópicos.
-                </p>
-              </div>
+            <p className="text-[10px] uppercase tracking-[0.2em] text-[#9E9E9E] mb-2">feed pessoal</p>
+            <h1 className="text-lg font-semibold text-[#111] mb-1">Preparando sua edição</h1>
+            <p className="text-sm text-[#9E9E9E] mb-8">
+              Isso pode levar alguns segundos.
+            </p>
 
-              <button
-                onClick={() => setShowModal(true)}
-                className="text-xs text-neutral-400 hover:text-neutral-600 underline underline-offset-2 transition-colors"
-              >
-                Por que demora?
-              </button>
-            </>
-          ) : (
-            <>
-              <h1 className="text-lg font-semibold text-neutral-900">Algo deu errado</h1>
-              <p className="text-sm text-neutral-500">Não conseguimos buscar as notícias agora.</p>
-              <button
-                onClick={() => { setError(false); window.location.reload() }}
-                className="px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors"
-              >
-                Tentar novamente
-              </button>
-            </>
-          )}
-        </div>
-      </main>
+            <button
+              onClick={() => setShowModal(true)}
+              className="text-xs text-[#9E9E9E] hover:text-[#5C5C5C] underline underline-offset-2 transition-colors"
+            >
+              Por que demora?
+            </button>
+          </>
+        ) : (
+          <>
+            <p className="text-[10px] uppercase tracking-[0.2em] text-[#9E9E9E] mb-6">feed pessoal</p>
+            <h1 className="text-base font-semibold text-[#111] mb-2">Algo deu errado</h1>
+            <p className="text-sm text-[#9E9E9E] mb-8">
+              Não foi possível buscar as notícias agora.
+            </p>
+            <button
+              onClick={() => { setError(false); window.location.reload() }}
+              className="px-6 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-70"
+              style={{ background: '#111' }}
+            >
+              Tentar novamente
+            </button>
+          </>
+        )}
+      </div>
 
+      {/* Modal "Por que demora?" */}
       {showModal && (
-        <div className="fixed inset-0 flex items-center justify-center p-6" style={{ zIndex: 9999 }}>
-          <div className="absolute inset-0 bg-black/20" onClick={closeModal} />
-          <div className="relative bg-white rounded-2xl shadow-lg w-full max-w-md p-6">
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-xs font-semibold text-neutral-400 uppercase tracking-widest">
-                O que acontece por trás
-              </h2>
-              <button onClick={closeModal} className="text-neutral-400 hover:text-neutral-700 transition-colors">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        <div className="fixed inset-0 flex items-center justify-center px-6" style={{ zIndex: 9999 }}>
+          <div
+            className="absolute inset-0"
+            style={{ background: 'rgba(0,0,0,0.3)' }}
+            onClick={closeModal}
+          />
+          <div
+            className="relative w-full max-w-md bg-white p-8"
+            style={{ zIndex: 10000 }}
+          >
+            {/* Header do modal */}
+            <div className="flex items-center justify-between mb-7">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-[#9E9E9E]">O que acontece por trás</p>
+              <button onClick={closeModal} className="text-[#9E9E9E] hover:text-[#111] transition-colors">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-0">
               {BEHIND_THE_SCENES.map((item, i) => (
-                <div key={i} className={i > 0 ? 'pt-4 border-t border-neutral-100' : ''}>
-                  <p className="text-sm font-medium text-neutral-800 mb-0.5">{item.title}</p>
-                  <p className="text-sm text-neutral-500 leading-relaxed">{item.body}</p>
+                <div
+                  key={i}
+                  className="py-4"
+                  style={i > 0 ? { borderTop: '1px solid #E0DED8' } : {}}
+                >
+                  <p className="text-sm font-semibold text-[#111] mb-1">{item.title}</p>
+                  <p className="text-sm text-[#9E9E9E] leading-relaxed">{item.body}</p>
                 </div>
               ))}
             </div>
@@ -155,7 +157,8 @@ export default function BuildingScreen({ userId }: { userId: string }) {
             {ready && (
               <button
                 onClick={closeModal}
-                className="mt-6 w-full py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors"
+                className="mt-6 w-full py-3 text-sm font-medium text-white transition-opacity hover:opacity-70"
+                style={{ background: '#111' }}
               >
                 Feed pronto — ver agora
               </button>
@@ -163,6 +166,6 @@ export default function BuildingScreen({ userId }: { userId: string }) {
           </div>
         </div>
       )}
-    </>
+    </div>
   )
 }

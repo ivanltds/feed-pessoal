@@ -7,6 +7,12 @@ const TOPICS = ['Tecnologia', 'Economia', 'Geopolítica', 'Ciência', 'Brasil', 
 
 type Step = 'topics' | 'time' | 'email'
 
+const STEP_LABELS: Record<Step, string> = {
+  topics: '01',
+  time: '02',
+  email: '03',
+}
+
 export default function OnboardingPage() {
   const router = useRouter()
   const [step, setStep] = useState<Step>('topics')
@@ -25,131 +31,161 @@ export default function OnboardingPage() {
   const handleSubmit = async () => {
     if (!email || selectedTopics.length === 0) return
     setLoading(true)
-
     const res = await fetch('/api/onboarding', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, name, topics: selectedTopics, editionHour }),
     })
-
     const data = await res.json()
-    if (data.userId) {
-      router.push('/')
-    }
+    if (data.userId) router.push('/')
     setLoading(false)
   }
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center px-6 py-12">
-      <div className="w-full max-w-sm bg-white rounded-2xl shadow-sm border border-neutral-200 p-6">
-        <div className="mb-8 text-center">
-          <h1 className="text-2xl font-semibold text-neutral-900">feed pessoal</h1>
-          <p className="text-sm text-neutral-500 mt-1">Sua edição diária, sem clickbait.</p>
+    <div
+      className="min-h-screen flex flex-col items-center justify-center px-6 py-16"
+      style={{ background: '#F2F1ED' }}
+    >
+      <div className="w-full max-w-sm">
+
+        {/* Marca + passo */}
+        <div className="flex items-baseline justify-between mb-10">
+          <p className="text-[10px] uppercase tracking-[0.2em] text-[#9E9E9E]">feed pessoal</p>
+          <p className="text-[10px] uppercase tracking-[0.2em] text-[#9E9E9E]">
+            {STEP_LABELS[step]} / 03
+          </p>
         </div>
 
-        {/* Indicador de progresso */}
-        <div className="flex gap-1.5 mb-8 justify-center">
-          {(['topics', 'time', 'email'] as Step[]).map((s) => (
-            <div
-              key={s}
-              className={`h-1 rounded-full transition-all duration-300 ${
-                s === step ? 'w-8 bg-blue-600' : 'w-4 bg-neutral-200'
-              }`}
-            />
-          ))}
-        </div>
-
-        {/* Step 1: Tópicos */}
+        {/* ── Step 1: Tópicos ─────────────────────────────────────────── */}
         {step === 'topics' && (
-          <div className="animate-in fade-in duration-300">
-            <h2 className="text-lg font-semibold mb-1">O que te interessa?</h2>
-            <p className="text-sm text-neutral-500 mb-5">Escolha pelo menos um tema.</p>
-            <div className="grid grid-cols-2 gap-2 mb-8">
+          <div>
+            <h1 className="text-2xl font-bold text-[#111] leading-tight mb-2">
+              O que você quer acompanhar?
+            </h1>
+            <p className="text-sm text-[#9E9E9E] mb-8">Escolha pelo menos um tema.</p>
+
+            <div className="grid grid-cols-2 gap-2 mb-10">
               {TOPICS.map((topic) => (
                 <button
                   key={topic}
                   onClick={() => toggleTopic(topic)}
-                  className={`py-3 px-4 rounded-xl text-sm font-medium border transition-all ${
-                    selectedTopics.includes(topic)
-                      ? 'bg-blue-600 border-blue-600 text-white'
-                      : 'bg-white border-neutral-200 text-neutral-700 hover:border-blue-300'
-                  }`}
+                  className="py-3 px-4 text-sm text-left transition-colors duration-150"
+                  style={{
+                    background: selectedTopics.includes(topic) ? '#111' : 'transparent',
+                    color: selectedTopics.includes(topic) ? '#FFF' : '#5C5C5C',
+                    border: `1px solid ${selectedTopics.includes(topic) ? '#111' : '#E0DED8'}`,
+                  }}
                 >
                   {topic}
                 </button>
               ))}
             </div>
+
             <button
               onClick={() => setStep('time')}
               disabled={selectedTopics.length === 0}
-              className="w-full py-3 rounded-xl bg-blue-600 text-white font-medium disabled:opacity-40 hover:bg-blue-700 transition-colors"
+              className="w-full py-3.5 text-sm font-medium text-white transition-opacity"
+              style={{
+                background: '#111',
+                opacity: selectedTopics.length === 0 ? 0.35 : 1,
+              }}
             >
               Continuar
             </button>
           </div>
         )}
 
-        {/* Step 2: Horário */}
+        {/* ── Step 2: Horário ─────────────────────────────────────────── */}
         {step === 'time' && (
-          <div className="animate-in fade-in duration-300">
-            <h2 className="text-lg font-semibold mb-1">Quando você prefere ler?</h2>
-            <p className="text-sm text-neutral-500 mb-5">Sua edição chegará por email nesse horário.</p>
-            <div className="grid grid-cols-2 gap-3 mb-8">
+          <div>
+            <h1 className="text-2xl font-bold text-[#111] leading-tight mb-2">
+              Quando você prefere ler?
+            </h1>
+            <p className="text-sm text-[#9E9E9E] mb-8">
+              Sua edição será gerada nesse horário.
+            </p>
+
+            <div className="grid grid-cols-2 gap-3 mb-10">
               {([7, 19] as const).map((hour) => (
                 <button
                   key={hour}
                   onClick={() => setEditionHour(hour)}
-                  className={`py-4 rounded-xl border text-center transition-all ${
-                    editionHour === hour
-                      ? 'bg-blue-600 border-blue-600 text-white'
-                      : 'bg-white border-neutral-200 text-neutral-700 hover:border-blue-300'
-                  }`}
+                  className="py-6 text-center transition-colors duration-150"
+                  style={{
+                    background: editionHour === hour ? '#111' : 'transparent',
+                    color: editionHour === hour ? '#FFF' : '#5C5C5C',
+                    border: `1px solid ${editionHour === hour ? '#111' : '#E0DED8'}`,
+                  }}
                 >
-                  <p className="text-xl font-semibold">{hour === 7 ? '7h' : '19h'}</p>
-                  <p className="text-xs mt-0.5 opacity-80">{hour === 7 ? 'Manhã' : 'Noite'}</p>
+                  <p className="text-2xl font-bold mb-1">{hour === 7 ? '7h' : '19h'}</p>
+                  <p className="text-xs" style={{ opacity: 0.7 }}>{hour === 7 ? 'Manhã' : 'Noite'}</p>
                 </button>
               ))}
             </div>
+
             <button
               onClick={() => setStep('email')}
-              className="w-full py-3 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors"
+              className="w-full py-3.5 text-sm font-medium text-white"
+              style={{ background: '#111' }}
             >
               Continuar
             </button>
           </div>
         )}
 
-        {/* Step 3: Email */}
+        {/* ── Step 3: Email ────────────────────────────────────────────── */}
         {step === 'email' && (
-          <div className="animate-in fade-in duration-300">
-            <h2 className="text-lg font-semibold mb-1">Último passo</h2>
-            <p className="text-sm text-neutral-500 mb-5">Enviaremos sua edição diária para esse email.</p>
-            <div className="space-y-3 mb-8">
-              <input
-                type="text"
-                placeholder="Seu nome (opcional)"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-neutral-300 bg-white text-sm text-neutral-900 placeholder:text-neutral-400 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 shadow-sm transition"
-              />
-              <input
-                type="email"
-                placeholder="seu@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-neutral-300 bg-white text-sm text-neutral-900 placeholder:text-neutral-400 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 shadow-sm transition"
-              />
+          <div>
+            <h1 className="text-2xl font-bold text-[#111] leading-tight mb-2">
+              Último passo
+            </h1>
+            <p className="text-sm text-[#9E9E9E] mb-10">
+              Enviaremos sua edição diária para esse email.
+            </p>
+
+            <div className="space-y-6 mb-10">
+              <div>
+                <label className="text-xs text-[#9E9E9E] block mb-1">Nome (opcional)</label>
+                <input
+                  type="text"
+                  placeholder="Seu nome"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full text-sm text-[#111] placeholder:text-[#C0BEB8] bg-transparent outline-none py-2"
+                  style={{ borderBottom: '1px solid #E0DED8' }}
+                  onFocus={(e) => { e.target.style.borderBottomColor = '#111' }}
+                  onBlur={(e) => { e.target.style.borderBottomColor = '#E0DED8' }}
+                />
+              </div>
+              <div>
+                <label className="text-xs text-[#9E9E9E] block mb-1">Email</label>
+                <input
+                  type="email"
+                  placeholder="seu@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full text-sm text-[#111] placeholder:text-[#C0BEB8] bg-transparent outline-none py-2"
+                  style={{ borderBottom: '1px solid #E0DED8' }}
+                  onFocus={(e) => { e.target.style.borderBottomColor = '#111' }}
+                  onBlur={(e) => { e.target.style.borderBottomColor = '#E0DED8' }}
+                />
+              </div>
             </div>
+
             <button
               onClick={handleSubmit}
               disabled={!email || loading}
-              className="w-full py-3 rounded-xl bg-blue-600 text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-700 transition-colors"
+              className="w-full py-3.5 text-sm font-medium text-white transition-opacity"
+              style={{
+                background: '#111',
+                opacity: !email || loading ? 0.35 : 1,
+              }}
             >
               {loading ? 'Criando sua conta…' : 'Começar'}
             </button>
           </div>
         )}
       </div>
-    </main>
+    </div>
   )
 }

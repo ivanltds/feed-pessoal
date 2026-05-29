@@ -32,7 +32,6 @@ export default function DoneScreen({ userId, topItem }: Props) {
   }, [topItem.id])
 
   const handleQuestion = async (question: SuggestedQuestion) => {
-    // registra feedback de deep_dive_question
     await fetch('/api/feedback', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -41,49 +40,51 @@ export default function DoneScreen({ userId, topItem }: Props) {
         events: [{ newsItemId: question.newsItemId, topic: question.topic, type: 'deep_dive_question' }],
       }),
     })
-
-    // navega para o modo 2 com a pergunta codificada
-    const params = new URLSearchParams({
-      q: question.text,
-      topic: question.topic,
-      itemId: question.newsItemId,
-    })
+    const params = new URLSearchParams({ q: question.text, topic: question.topic, itemId: question.newsItemId })
     router.push(`/deep?${params.toString()}`)
   }
 
   return (
-    <div className="mt-10 pb-16 text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* Ícone de conclusão */}
-      <div className="w-14 h-14 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-4">
-        <svg className="w-7 h-7 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-        </svg>
+    <div className="pb-20 text-center" style={{ animation: 'fadeUp 0.5s ease both' }}>
+      <style>{`
+        @keyframes fadeUp {
+          from { opacity: 0; transform: translateY(12px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
+
+      {/* Linha divisória + mensagem */}
+      <div className="mb-8 pt-8" style={{ borderTop: '1px solid #E0DED8' }}>
+        <p className="text-[10px] uppercase tracking-[0.2em] text-[#9E9E9E] mb-3">Você está em dia</p>
+        <p className="text-sm text-[#5C5C5C]">
+          {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+        </p>
       </div>
 
-      <h2 className="text-xl font-semibold text-neutral-800 mb-1">Você está em dia</h2>
-      <p className="text-sm text-neutral-400 mb-8">
-        {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
-      </p>
-
-      {/* Perguntas sugeridas */}
+      {/* Perguntas para aprofundar */}
       <div className="text-left">
-        <p className="text-xs text-neutral-400 uppercase tracking-widest mb-3 text-center">
+        <p className="text-[10px] uppercase tracking-[0.2em] text-[#9E9E9E] mb-4 text-center">
           Quer se aprofundar?
         </p>
 
         {loading ? (
           <div className="space-y-3">
             {[0, 1, 2].map((i) => (
-              <div key={i} className="h-14 rounded-2xl bg-neutral-100 animate-pulse" />
+              <div
+                key={i}
+                className="h-12 animate-pulse"
+                style={{ background: '#E8E7E3' }}
+              />
             ))}
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {questions.map((q) => (
               <button
                 key={q.id}
                 onClick={() => handleQuestion(q)}
-                className="w-full text-left px-4 py-3.5 rounded-2xl bg-white border border-neutral-200 text-sm font-medium text-neutral-800 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 transition-all duration-150 shadow-sm"
+                className="w-full text-left px-4 py-3.5 text-sm text-[#111] transition-colors duration-150 hover:bg-[#F2F1ED]"
+                style={{ border: '1px solid #E0DED8', background: '#FFF' }}
               >
                 {q.text}
               </button>

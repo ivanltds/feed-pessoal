@@ -16,10 +16,8 @@ export default function SettingsPanel() {
   const [prefs, setPrefs] = useState<UserPrefs | null>(null)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
-
   const [loadError, setLoadError] = useState(false)
 
-  // Carrega prefs apenas quando o drawer abre
   useEffect(() => {
     if (!open || prefs) return
     setLoadError(false)
@@ -30,7 +28,7 @@ export default function SettingsPanel() {
         setPrefs(data)
       })
       .catch(() => setLoadError(true))
-  }, [open])
+  }, [open, prefs])
 
   const toggleTopic = (topic: string) => {
     if (!prefs) return
@@ -67,75 +65,119 @@ export default function SettingsPanel() {
 
   return (
     <>
-      {/* Botão — sempre visível */}
+      {/* Botão de abertura */}
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-1.5 text-xs text-neutral-500 hover:text-neutral-800 transition-colors"
-        title="Preferências"
+        aria-label="Preferências"
+        className="flex items-center gap-2 transition-all duration-150"
+        style={{
+          padding: '6px 12px',
+          border: '1px solid #E0DED8',
+          color: '#5C5C5C',
+          fontSize: '12px',
+          letterSpacing: '0.01em',
+          background: 'transparent',
+          lineHeight: 1,
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.borderColor = '#111'
+          e.currentTarget.style.color = '#111'
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.borderColor = '#E0DED8'
+          e.currentTarget.style.color = '#5C5C5C'
+        }}
       >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        {/* Ícone sliders — mais editorial que engrenagem */}
+        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}>
+          <path strokeLinecap="round" d="M4 6h16M4 12h16M4 18h16" />
+          <circle cx="9" cy="6" r="2" fill="currentColor" stroke="none" />
+          <circle cx="15" cy="12" r="2" fill="currentColor" stroke="none" />
+          <circle cx="9" cy="18" r="2" fill="currentColor" stroke="none" />
         </svg>
-        Preferências
+        <span className="hidden sm:inline">Preferências</span>
       </button>
 
-      {/* Drawer */}
+      {/* Overlay + Drawer */}
       {open && (
         <div className="fixed inset-0 flex justify-end" style={{ zIndex: 9999 }}>
-          <div className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
+          <div
+            className="absolute inset-0"
+            style={{ background: 'rgba(0,0,0,0.35)' }}
+            onClick={() => setOpen(false)}
+          />
 
-          <div className="relative bg-white w-full sm:max-w-sm h-full overflow-y-auto shadow-2xl flex flex-col" style={{ zIndex: 10000 }}>
-            {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100">
-              <h2 className="text-base font-semibold text-neutral-900">Preferências</h2>
-              <button onClick={() => setOpen(false)} className="text-neutral-400 hover:text-neutral-700 transition-colors">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          <div
+            className="relative flex flex-col h-full overflow-y-auto w-full sm:max-w-sm"
+            style={{ background: '#FFFFFF', zIndex: 10000, borderLeft: '1px solid #E0DED8' }}
+          >
+            {/* Header do drawer */}
+            <div className="flex items-center justify-between px-6 py-5" style={{ borderBottom: '1px solid #E0DED8' }}>
+              <span className="text-sm font-semibold text-[#111] tracking-tight">Preferências</span>
+              <button
+                onClick={() => setOpen(false)}
+                className="text-[#9E9E9E] hover:text-[#111] transition-colors"
+              >
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
 
             {/* Conteúdo */}
             {loadError ? (
-              <div className="flex-1 flex flex-col items-center justify-center gap-3 px-5 text-center">
-                <p className="text-sm text-neutral-500">Não foi possível carregar suas preferências.</p>
+              <div className="flex-1 flex flex-col items-center justify-center gap-4 px-6 text-center">
+                <p className="text-sm text-[#9E9E9E]">Não foi possível carregar suas preferências.</p>
                 <button
                   onClick={() => { setLoadError(false); setPrefs(null) }}
-                  className="text-sm text-blue-600 hover:underline"
+                  className="text-xs text-[#111] underline underline-offset-2"
                 >
                   Tentar novamente
                 </button>
               </div>
             ) : !prefs ? (
               <div className="flex-1 flex items-center justify-center">
-                <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                <div
+                  className="w-5 h-5 rounded-full"
+                  style={{
+                    border: '2px solid #E0DED8',
+                    borderTopColor: '#111',
+                    animation: 'spin 0.8s linear infinite',
+                  }}
+                />
+                <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
               </div>
             ) : (
               <>
-                <div className="px-5 py-5 space-y-7 flex-1">
+                <div className="flex-1 px-6 py-6 space-y-8">
+
                   {/* Conta */}
                   <section>
-                    <h3 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-3">Conta</h3>
-                    <div className="space-y-3">
+                    <p className="text-[10px] uppercase tracking-[0.18em] text-[#9E9E9E] mb-4">Conta</p>
+                    <div className="space-y-5">
                       <div>
-                        <label className="text-xs text-neutral-500 mb-1 block">Nome</label>
+                        <label className="text-xs text-[#9E9E9E] block mb-1">Nome</label>
                         <input
                           type="text"
                           value={prefs.name ?? ''}
                           onChange={(e) => setPrefs({ ...prefs, name: e.target.value })}
                           placeholder="Seu nome"
-                          className="w-full px-3 py-2.5 rounded-xl border border-neutral-300 bg-white text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition"
+                          className="w-full text-sm text-[#111] placeholder:text-[#C0BEB8] bg-transparent outline-none py-2"
+                          style={{ borderBottom: '1px solid #E0DED8' }}
+                          onFocus={(e) => { e.target.style.borderBottomColor = '#111' }}
+                          onBlur={(e) => { e.target.style.borderBottomColor = '#E0DED8' }}
                         />
                       </div>
                       <div>
-                        <label className="text-xs text-neutral-500 mb-1 block">Email</label>
+                        <label className="text-xs text-[#9E9E9E] block mb-1">Email</label>
                         <input
                           type="email"
                           value={prefs.email}
                           onChange={(e) => setPrefs({ ...prefs, email: e.target.value })}
-                          className="w-full px-3 py-2.5 rounded-xl border border-neutral-300 bg-white text-sm text-neutral-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition"
+                          className="w-full text-sm text-[#111] bg-transparent outline-none py-2"
+                          style={{ borderBottom: '1px solid #E0DED8' }}
+                          onFocus={(e) => { e.target.style.borderBottomColor = '#111' }}
+                          onBlur={(e) => { e.target.style.borderBottomColor = '#E0DED8' }}
                         />
                       </div>
                     </div>
@@ -143,19 +185,20 @@ export default function SettingsPanel() {
 
                   {/* Horário */}
                   <section>
-                    <h3 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-3">Horário da edição</h3>
+                    <p className="text-[10px] uppercase tracking-[0.18em] text-[#9E9E9E] mb-4">Horário da edição</p>
                     <div className="grid grid-cols-2 gap-2">
                       {([7, 19] as const).map((hour) => (
                         <button
                           key={hour}
                           onClick={() => setPrefs({ ...prefs, editionHour: hour })}
-                          className={`py-3 rounded-xl border text-center text-sm font-medium transition-all ${
-                            prefs.editionHour === hour
-                              ? 'bg-blue-600 border-blue-600 text-white'
-                              : 'bg-white border-neutral-200 text-neutral-700 hover:border-blue-300'
-                          }`}
+                          className="py-3 text-center text-sm transition-colors duration-150"
+                          style={{
+                            background: prefs.editionHour === hour ? '#111' : 'transparent',
+                            color: prefs.editionHour === hour ? '#FFF' : '#5C5C5C',
+                            border: `1px solid ${prefs.editionHour === hour ? '#111' : '#E0DED8'}`,
+                          }}
                         >
-                          {hour === 7 ? '☀️ 7h manhã' : '🌙 19h noite'}
+                          {hour === 7 ? 'Manhã — 7h' : 'Noite — 19h'}
                         </button>
                       ))}
                     </div>
@@ -163,17 +206,18 @@ export default function SettingsPanel() {
 
                   {/* Tópicos */}
                   <section>
-                    <h3 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-3">Tópicos de interesse</h3>
+                    <p className="text-[10px] uppercase tracking-[0.18em] text-[#9E9E9E] mb-4">Tópicos de interesse</p>
                     <div className="grid grid-cols-2 gap-2">
                       {ALL_TOPICS.map((topic) => (
                         <button
                           key={topic}
                           onClick={() => toggleTopic(topic)}
-                          className={`py-2.5 px-3 rounded-xl text-sm font-medium border transition-all ${
-                            prefs.selectedTopics.includes(topic)
-                              ? 'bg-blue-600 border-blue-600 text-white'
-                              : 'bg-white border-neutral-200 text-neutral-700 hover:border-blue-300'
-                          }`}
+                          className="py-2.5 px-3 text-sm transition-colors duration-150 text-left"
+                          style={{
+                            background: prefs.selectedTopics.includes(topic) ? '#111' : 'transparent',
+                            color: prefs.selectedTopics.includes(topic) ? '#FFF' : '#5C5C5C',
+                            border: `1px solid ${prefs.selectedTopics.includes(topic) ? '#111' : '#E0DED8'}`,
+                          }}
                         >
                           {topic}
                         </button>
@@ -182,14 +226,19 @@ export default function SettingsPanel() {
                   </section>
                 </div>
 
-                {/* Footer */}
-                <div className="px-5 py-4 border-t border-neutral-100">
+                {/* Rodapé com salvar */}
+                <div className="px-6 py-5" style={{ borderTop: '1px solid #E0DED8' }}>
                   <button
                     onClick={handleSave}
                     disabled={saving || prefs.selectedTopics.length === 0}
-                    className="w-full py-3 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                    className="w-full py-3 text-sm font-medium transition-opacity duration-150"
+                    style={{
+                      background: '#111',
+                      color: '#FFF',
+                      opacity: saving || prefs.selectedTopics.length === 0 ? 0.4 : 1,
+                    }}
                   >
-                    {saving ? 'Salvando…' : saved ? '✓ Salvo! Atualizando feed…' : 'Salvar preferências'}
+                    {saving ? 'Salvando…' : saved ? 'Salvo — atualizando feed…' : 'Salvar'}
                   </button>
                 </div>
               </>
