@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import NewsModal from './NewsModal'
 
 interface NewsItem {
@@ -27,12 +27,30 @@ function timeAgo(date: Date): string {
   return `${Math.floor(hours / 24)}d`
 }
 
-function Img({ src, aspect, className }: { src: string; aspect: string; className?: string }) {
+function useImgStatus(src: string) {
   const [status, setStatus] = useState<'loading' | 'loaded' | 'failed'>('loading')
+  const ref = useRef<HTMLImageElement>(null)
+
+  // Resolve race condition: se a imagem já carregou antes do React hidratar,
+  // o onLoad nunca dispara — então verificamos img.complete após o mount.
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    if (el.complete) {
+      setStatus(el.naturalWidth > 0 ? 'loaded' : 'failed')
+    }
+  }, [src])
+
+  return { ref, status, setStatus }
+}
+
+function Img({ src, aspect, className }: { src: string; aspect: string; className?: string }) {
+  const { ref, status, setStatus } = useImgStatus(src)
   if (status === 'failed') return null
   return (
     <div className={`w-full overflow-hidden bg-[#E3E2DC] ${aspect}`}>
       <img
+        ref={ref}
         src={src}
         alt=""
         onLoad={() => setStatus('loaded')}
@@ -44,11 +62,12 @@ function Img({ src, aspect, className }: { src: string; aspect: string; classNam
 }
 
 function CompactImg({ src }: { src: string }) {
-  const [status, setStatus] = useState<'loading' | 'loaded' | 'failed'>('loading')
+  const { ref, status, setStatus } = useImgStatus(src)
   if (status === 'failed') return null
   return (
     <div className="w-[68px] h-[68px] shrink-0 overflow-hidden bg-[#E3E2DC]">
       <img
+        ref={ref}
         src={src}
         alt=""
         onLoad={() => setStatus('loaded')}
