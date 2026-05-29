@@ -5,31 +5,65 @@ export interface TopicWeights {
 }
 
 const DEFAULT_WEIGHT = 1.0
-const MAX_TOTAL = 30        // máximo total de itens na edição
+const MAX_TOTAL = 30
+const MAX_PER_SOURCE = 3   // evita domínio de uma única fonte
 
 /**
- * Calcula o score de um item baseado em:
- * - peso do tópico do usuário
- * - recência (decai com o tempo)
- * - qualidade da fonte (stub: todas valem 1.0 por enquanto)
+ * Decaimento exponencial de recência.
+ * Meia-vida de 8h: item de 8h atrás vale 0.5, 16h vale 0.25, 24h vale 0.125.
+ * Items com menos de 2h valem praticamente 1.0.
  */
+function recencyScore(publishedAt: Date): number {
+  const ageHours = (Date.now() - publishedAt.getTime()) / (1000 * 60 * 60)
+  return Math.exp(-ageHours / 12)  // λ = 1/12, ~natural para notícias
+}
+
 function calcScore(item: RawNewsItem, topicWeights: TopicWeights): number {
   const topicWeight = topicWeights[item.topic] ?? DEFAULT_WEIGHT
-
-  // recência: 1.0 = agora, decai linearmente em 48h
-  const ageHours = (Date.now() - item.publishedAt.getTime()) / (1000 * 60 * 60)
-  const recencyScore = Math.max(0, 1 - ageHours / 48)
-
-  // qualidade da fonte (expansível — por ora todas iguais)
-  const sourceQuality = 1.0
-
-  return topicWeight * recencyScore * sourceQuality
+  const sourceQuality = 1.0  // expansível por fonte
+  return topicWeight * recencyScore(item.publishedAt) * sourceQuality
 }
 
 /**
- * Seleciona até 30 itens distribuídos proporcionalmente pelos tópicos ativos.
- * 1 tópico → 30 itens; 2 tópicos → 15 cada; 6 tópicos → 5 cada.
+ * Distribui as 30 vagas proporcionalmente ao peso de cada tópico.
+ * Tópico com peso 8 recebe ~2× mais itens que tópico com peso 4.
+ * Mínimo de 2 itens por tópico garantido.
  */
+function proportionalQuotas(
+  topics: string[],
+  weights: TopicWeights,
+  total: number
+): Map<string, number> {
+  const MIN_PER_TOPIC = 2
+  const weightSum = topics.reduce((s, t) => s + (weights[t] ?? DEFAULT_WEIGHT), 0)
+
+  const quotas = new Map<string, number>()
+  let allocated = 0
+
+  for (const topic of topics) {
+    const w = weights[topic] ?? DEFAULT_WEIGHT
+    const raw = Math.round((w / weightSum) * total)
+    const quota = Math.max(MIN_PER_TOPIC, raw)
+    quotas.set(topic, quota)
+    allocated += quota
+  }
+
+  // ajusta se ultrapassou MAX_TOTAL (reduz dos tópicos com menor peso)
+  const sorted = [...topics].sort((a, b) => (weights[a] ?? 1) - (weights[b] ?? 1))
+  let excess = allocated - total
+  for (const topic of sorted) {
+    if (excess <= 0) break
+    const current = quotas.get(topic)!
+    const canReduce = Math.min(excess, current - MIN_PER_TOPIC)
+    if (canReduce > 0) {
+      quotas.set(topic, current - canReduce)
+      excess -= canReduce
+    }
+  }
+
+  return quotas
+}
+
 export function rankItems(
   candidates: RawNewsItem[],
   topicWeights: TopicWeights
@@ -49,7 +83,7 @@ export function rankItems(
     return true
   })
 
-  // agrupa por tópico
+  // agrupa por tópico e ordena por score
   const byTopic = new Map<string, typeof unique>()
   for (const item of unique) {
     const group = byTopic.get(item.topic) ?? []
@@ -57,20 +91,32 @@ export function rankItems(
     byTopic.set(item.topic, group)
   }
 
-  // calcula cota por tópico dinamicamente: 30 ÷ número de tópicos presentes
-  const numTopics = Math.max(1, byTopic.size)
-  const itemsPerTopic = Math.ceil(MAX_TOTAL / numTopics)
+  const topics = [...byTopic.keys()]
+  const quotas = proportionalQuotas(topics, topicWeights, MAX_TOTAL)
 
+  // seleciona itens por tópico: top-N por score, com cap por fonte
   for (const [topic, items] of byTopic) {
-    byTopic.set(topic, items.sort((a, b) => b.score - a.score).slice(0, itemsPerTopic))
+    const quota = quotas.get(topic) ?? MIN_PER_TOPIC_FALLBACK
+    const perSource = new Map<string, number>()
+    const selected: typeof items = []
+
+    for (const item of items.sort((a, b) => b.score - a.score)) {
+      if (selected.length >= quota) break
+      const sourceCount = perSource.get(item.sourceId) ?? 0
+      if (sourceCount >= MAX_PER_SOURCE) continue
+      selected.push(item)
+      perSource.set(item.sourceId, sourceCount + 1)
+    }
+
+    byTopic.set(topic, selected)
   }
 
-  // ordena os tópicos pelo score do seu melhor item
+  // ordena tópicos pelo score do melhor item (maior interesse primeiro)
   const topicsByScore = [...byTopic.entries()].sort(
     (a, b) => (b[1][0]?.score ?? 0) - (a[1][0]?.score ?? 0)
   )
 
-  // monta lista final: tópico por tópico, respeitando MAX_TOTAL
+  // monta lista final
   const result: NewsItem[] = []
   for (const [, items] of topicsByScore) {
     for (const item of items) {
@@ -83,16 +129,21 @@ export function rankItems(
   return result
 }
 
+const MIN_PER_TOPIC_FALLBACK = 2
+
 /**
  * Calcula novos pesos a partir dos eventos de feedback de uma sessão.
+ * deep_dive_question = maior interesse (conversa com IA)
+ * long_read = leu o artigo original (interesse alto)
+ * skip = pulou rápido (desinteresse)
  */
 export function applyFeedbackDeltas(
   currentWeights: TopicWeights,
   events: { topic: string; type: 'deep_dive_question' | 'long_read' | 'skip' }[]
 ): TopicWeights {
-  const DELTAS = {
-    deep_dive_question: 2.0,
-    long_read: 1.0,
+  const DELTAS: Record<string, number> = {
+    deep_dive_question: 2.5,   // IA = sinal mais forte de interesse
+    long_read: 1.5,            // leu o original = interesse real
     skip: -0.5,
   }
 
@@ -100,8 +151,7 @@ export function applyFeedbackDeltas(
 
   for (const event of events) {
     const current = updated[event.topic] ?? DEFAULT_WEIGHT
-    const delta = DELTAS[event.type]
-    // mantém peso entre 0.1 e 10 para evitar extremos
+    const delta = DELTAS[event.type] ?? 0
     updated[event.topic] = Math.min(10, Math.max(0.1, current + delta))
   }
 

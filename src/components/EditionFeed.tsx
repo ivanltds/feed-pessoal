@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import NewsCard from './NewsCard'
 import DoneScreen from './DoneScreen'
 import SettingsPanel from './SettingsPanel'
@@ -14,6 +15,7 @@ interface NewsItem {
   imageUrl: string | null
   url: string
   publishedAt: Date
+  score?: number
 }
 
 interface Props {
@@ -24,9 +26,21 @@ interface Props {
 }
 
 export default function EditionFeed({ items, date, userId }: Props) {
+  const router = useRouter()
   const [doneVisible, setDoneVisible] = useState(false)
+  const [rebuilding, setRebuilding] = useState(false)
   const readTimeRef = useRef<Record<string, number>>({})
   const enterTimeRef = useRef<Record<string, number>>({})
+
+  const handleRebuild = useCallback(async () => {
+    setRebuilding(true)
+    try {
+      await fetch('/api/rebuild-edition', { method: 'POST' })
+      router.refresh()
+    } finally {
+      setRebuilding(false)
+    }
+  }, [router])
   const lastItemId = items[items.length - 1]?.id
 
   // Rastreia tempo de leitura + detecta último card visível
@@ -79,19 +93,22 @@ export default function EditionFeed({ items, date, userId }: Props) {
     return () => window.removeEventListener('beforeunload', sendFeedback)
   }, [items, userId])
 
-  // Hero = primeiro item; restante agrupado por tópico (mantendo ordem de chegada)
+  // Hero = primeiro item; restante agrupado por tópico
   const hero = items[0]
   const rest = items.slice(1)
 
-  const topicOrder: string[] = []
   const byTopic: Record<string, NewsItem[]> = {}
   for (const item of rest) {
-    if (!byTopic[item.topic]) {
-      topicOrder.push(item.topic)
-      byTopic[item.topic] = []
-    }
+    if (!byTopic[item.topic]) byTopic[item.topic] = []
     byTopic[item.topic].push(item)
   }
+
+  // Ordena tópicos pelo score médio dos seus itens (maior interesse primeiro)
+  const topicOrder = Object.keys(byTopic).sort((a, b) => {
+    const avgScore = (items: NewsItem[]) =>
+      items.reduce((s, i) => s + (i.score ?? 0), 0) / items.length
+    return avgScore(byTopic[b]) - avgScore(byTopic[a])
+  })
 
   // No desktop, o primeiro tópico aparece como sidebar do hero (os 2 primeiros itens)
   const sidebarItems = topicOrder[0] ? byTopic[topicOrder[0]].slice(0, 2) : []
@@ -124,7 +141,18 @@ export default function EditionFeed({ items, date, userId }: Props) {
             {date}
           </span>
 
-          <SettingsPanel />
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleRebuild}
+              disabled={rebuilding}
+              className="text-xs transition-opacity"
+              style={{ color: '#9E9E9E', opacity: rebuilding ? 0.4 : 1 }}
+              title="Recriar o feed do zero"
+            >
+              {rebuilding ? 'Recriando…' : '↺ Recriar feed'}
+            </button>
+            <SettingsPanel />
+          </div>
         </div>
 
         <div className="md:hidden px-5 pb-2">
