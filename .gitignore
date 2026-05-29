@@ -49,3 +49,6 @@ next-env.d.ts
 /prisma/*.db-shm
 auth
 auth-wal
+
+.vercel
+.env*
