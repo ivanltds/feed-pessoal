@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import type { SuggestedQuestion } from '@/services/question-generator'
+import { useDeepDive } from '@/hooks/useDeepDive'
 
 interface NewsItem {
   id: string
@@ -18,7 +18,7 @@ interface Props {
 export default function DoneScreen({ userId, topItem }: Props) {
   const [questions, setQuestions] = useState<SuggestedQuestion[]>([])
   const [loading, setLoading] = useState(true)
-  const router = useRouter()
+  const { openQuestion } = useDeepDive(userId)
 
   useEffect(() => {
     fetch('/api/questions', {
@@ -31,18 +31,6 @@ export default function DoneScreen({ userId, topItem }: Props) {
       .finally(() => setLoading(false))
   }, [topItem.id])
 
-  const handleQuestion = async (question: SuggestedQuestion) => {
-    await fetch('/api/feedback', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        userId,
-        events: [{ newsItemId: question.newsItemId, topic: question.topic, type: 'deep_dive_question' }],
-      }),
-    })
-    const params = new URLSearchParams({ q: question.text, topic: question.topic, itemId: question.newsItemId })
-    router.push(`/deep?${params.toString()}`)
-  }
 
   return (
     <div className="pb-20 text-center" style={{ animation: 'fadeUp 0.5s ease both' }}>
@@ -82,7 +70,7 @@ export default function DoneScreen({ userId, topItem }: Props) {
             {questions.map((q) => (
               <button
                 key={q.id}
-                onClick={() => handleQuestion(q)}
+                onClick={() => openQuestion(q)}
                 className="w-full text-left px-4 py-3.5 text-sm text-[#111] transition-colors duration-150 hover:bg-[#F2F1ED]"
                 style={{ border: '1px solid #E0DED8', background: '#FFF' }}
               >

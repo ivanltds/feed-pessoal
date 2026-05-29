@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import type { SuggestedQuestion } from '@/services/question-generator'
+import { useDeepDive } from '@/hooks/useDeepDive'
 
 interface NewsItem {
   id: string
@@ -30,6 +31,7 @@ function timeAgo(date: Date): string {
 export default function NewsModal({ item, onClose }: Props) {
   const [questions, setQuestions] = useState<SuggestedQuestion[]>([])
   const [loadingQ, setLoadingQ] = useState(true)
+  const { openQuestion } = useDeepDive()
 
   // Fecha com ESC
   useEffect(() => {
@@ -166,7 +168,8 @@ export default function NewsModal({ item, onClose }: Props) {
                 {questions.map((q) => (
                   <button
                     key={q.id}
-                    className="w-full text-left text-sm py-2.5 px-3 transition-colors duration-150"
+                    onClick={() => openQuestion(q)}
+                    className="w-full text-left text-sm py-2.5 px-3 transition-colors duration-150 flex items-center justify-between gap-3"
                     style={{
                       border: '1px solid #E0DED8',
                       color: '#3A3A3A',
@@ -181,7 +184,10 @@ export default function NewsModal({ item, onClose }: Props) {
                       e.currentTarget.style.color = '#3A3A3A'
                     }}
                   >
-                    {q.text}
+                    <span>{q.text}</span>
+                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2} className="shrink-0 opacity-40">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
                   </button>
                 ))}
               </div>

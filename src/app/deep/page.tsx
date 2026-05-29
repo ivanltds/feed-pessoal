@@ -8,13 +8,6 @@ interface Message {
   content: string
 }
 
-interface RelatedLink {
-  title: string
-  url: string
-  source: string
-  imageUrl?: string
-}
-
 function DeepDiveContent() {
   const params = useSearchParams()
   const router = useRouter()
@@ -23,10 +16,10 @@ function DeepDiveContent() {
   const itemId = params.get('itemId') ?? ''
 
   const [messages, setMessages] = useState<Message[]>([])
-  const [related, setRelated] = useState<RelatedLink[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
   const initialized = useRef(false)
 
   const sendMessage = async (text: string) => {
@@ -43,21 +36,18 @@ function DeepDiveContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messages: newMessages, topic, itemId }),
       })
-
       const data = await res.json()
       setMessages((prev) => [...prev, { role: 'assistant', content: data.answer }])
-      if (data.related?.length) setRelated(data.related)
     } catch {
       setMessages((prev) => [
         ...prev,
-        { role: 'assistant', content: 'Desculpe, não consegui buscar essa informação. Tente novamente.' },
+        { role: 'assistant', content: 'Não consegui buscar essa informação. Tente novamente.' },
       ])
     } finally {
       setLoading(false)
     }
   }
 
-  // inicia conversa com a pergunta da tela de conclusão
   useEffect(() => {
     if (!initialized.current && question) {
       initialized.current = true
@@ -69,112 +59,151 @@ function DeepDiveContent() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, loading])
 
+  useEffect(() => {
+    if (!loading) inputRef.current?.focus()
+  }, [loading])
+
   return (
-    <div className="max-w-xl mx-auto flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen" style={{ background: '#F2F1ED' }}>
+
       {/* Header */}
-      <div className="sticky top-0 bg-[#f0f0ed]/95 backdrop-blur-sm px-4 py-3 border-b border-neutral-300 z-10 flex items-center gap-3">
+      <header
+        className="sticky top-0 flex items-center gap-4 px-6 sm:px-10"
+        style={{
+          height: '52px',
+          background: '#F2F1ED',
+          borderBottom: '1px solid #E0DED8',
+          zIndex: 100,
+        }}
+      >
         <button
-          onClick={() => router.push('/')}
-          className="text-neutral-400 hover:text-neutral-700 transition-colors"
-          aria-label="Voltar para edição"
+          onClick={() => router.back()}
+          style={{ color: '#9E9E9E', lineHeight: 1 }}
+          className="hover:text-[#111] transition-colors"
+          aria-label="Voltar"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
         </button>
+
         <div>
-          <p className="text-xs text-neutral-400 uppercase tracking-widest">aprofundamento</p>
-          <p className="text-sm font-medium text-neutral-700">{topic}</p>
+          <p className="text-[10px] uppercase tracking-[0.2em]" style={{ color: '#9E9E9E' }}>
+            Aprofundamento
+          </p>
+          {topic && (
+            <p className="text-xs font-medium" style={{ color: '#111', letterSpacing: '-0.01em' }}>
+              {topic}
+            </p>
+          )}
         </div>
-      </div>
+      </header>
 
       {/* Mensagens */}
-      <div className="flex-1 px-4 py-4 space-y-4 overflow-y-auto">
-        {messages.map((msg, i) => (
-          <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div
-              className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
-                msg.role === 'user'
-                  ? 'bg-blue-600 text-white rounded-br-sm'
-                  : 'bg-white border border-neutral-200 text-neutral-800 rounded-bl-sm shadow-sm'
-              }`}
-            >
-              {msg.role === 'assistant'
-                ? msg.content.split('\n\n').map((para, j) => (
-                    <p key={j} className={j > 0 ? 'mt-3' : ''}>{para}</p>
-                  ))
-                : msg.content}
+      <main className="flex-1 overflow-y-auto">
+        <div className="max-w-2xl mx-auto px-6 sm:px-10 py-8 space-y-6">
+          {messages.map((msg, i) => (
+            <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+              {msg.role === 'user' ? (
+                <p
+                  className="text-sm px-4 py-3 max-w-[80%]"
+                  style={{
+                    background: '#111',
+                    color: '#FFF',
+                    lineHeight: 1.6,
+                  }}
+                >
+                  {msg.content}
+                </p>
+              ) : (
+                <div className="max-w-[92%]">
+                  {msg.content.split('\n\n').map((para, j) => (
+                    <p
+                      key={j}
+                      className="text-sm"
+                      style={{
+                        color: '#111',
+                        lineHeight: 1.75,
+                        marginTop: j > 0 ? '1rem' : 0,
+                      }}
+                    >
+                      {para}
+                    </p>
+                  ))}
+                </div>
+              )}
             </div>
-          </div>
-        ))}
+          ))}
 
-        {loading && (
-          <div className="flex justify-start">
-            <div className="bg-white border border-neutral-100 rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm">
-              <div className="flex gap-1 items-center h-4">
+          {loading && (
+            <div className="flex justify-start">
+              <div className="flex gap-1 items-center" style={{ height: '24px' }}>
                 {[0, 1, 2].map((i) => (
                   <div
                     key={i}
-                    className="w-1.5 h-1.5 rounded-full bg-neutral-400 animate-bounce"
-                    style={{ animationDelay: `${i * 0.15}s` }}
+                    style={{
+                      width: '5px',
+                      height: '5px',
+                      borderRadius: '50%',
+                      background: '#9E9E9E',
+                      animation: 'bounce 1s ease infinite',
+                      animationDelay: `${i * 0.15}s`,
+                    }}
                   />
                 ))}
+                <style>{`
+                  @keyframes bounce {
+                    0%, 100% { transform: translateY(0); }
+                    50% { transform: translateY(-5px); }
+                  }
+                `}</style>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Links relacionados */}
-        {related.length > 0 && (
-          <div className="space-y-2 pt-2">
-            <p className="text-xs text-neutral-400 uppercase tracking-widest">Leia mais</p>
-            {related.map((link, i) => (
-              <a
-                key={i}
-                href={link.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex gap-3 p-3 bg-white rounded-xl border border-neutral-100 shadow-sm hover:shadow-md transition-shadow"
-              >
-                {link.imageUrl && (
-                  <img src={link.imageUrl} alt="" className="w-16 h-16 rounded-lg object-cover flex-shrink-0" />
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-neutral-800 line-clamp-2">{link.title}</p>
-                  <p className="text-xs text-neutral-400 mt-1">{link.source}</p>
-                </div>
-              </a>
-            ))}
-          </div>
-        )}
-
-        <div ref={bottomRef} />
-      </div>
+          <div ref={bottomRef} />
+        </div>
+      </main>
 
       {/* Input */}
-      <div className="sticky bottom-0 bg-[#f0f0ed]/95 backdrop-blur-sm px-4 py-3 border-t border-neutral-300">
+      <footer
+        className="sticky bottom-0"
+        style={{
+          background: '#F2F1ED',
+          borderTop: '1px solid #E0DED8',
+        }}
+      >
         <form
           onSubmit={(e) => { e.preventDefault(); sendMessage(input) }}
-          className="flex gap-2"
+          className="max-w-2xl mx-auto px-6 sm:px-10 py-4 flex gap-3 items-center"
         >
           <input
+            ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Pergunte mais sobre o tema…"
-            className="flex-1 px-4 py-2.5 rounded-full border border-neutral-200 bg-white text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition"
             disabled={loading}
+            className="flex-1 bg-transparent text-sm outline-none py-2"
+            style={{
+              borderBottom: '1px solid #E0DED8',
+              color: '#111',
+            }}
+            onFocus={(e) => { e.target.style.borderBottomColor = '#111' }}
+            onBlur={(e) => { e.target.style.borderBottomColor = '#E0DED8' }}
           />
           <button
             type="submit"
             disabled={loading || !input.trim()}
-            className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center disabled:opacity-40 hover:bg-blue-700 transition-colors"
+            className="text-sm font-medium transition-opacity"
+            style={{
+              color: '#111',
+              opacity: loading || !input.trim() ? 0.3 : 1,
+            }}
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-            </svg>
+            Enviar
           </button>
         </form>
-      </div>
+      </footer>
     </div>
   )
 }
