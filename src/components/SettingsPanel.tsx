@@ -31,6 +31,7 @@ export default function SettingsPanel() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [loadError, setLoadError] = useState(false)
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     if (!open || prefs) return
@@ -39,7 +40,16 @@ export default function SettingsPanel() {
       .then((r) => r.json())
       .then((data) => {
         if (data.error) { setLoadError(true); return }
-        setPrefs({ ...data, language: data.language ?? 'pt-BR' })
+        const userPrefs: UserPrefs = { ...data, language: data.language ?? 'pt-BR' }
+        setPrefs(userPrefs)
+
+        // Inicializa sanfona: abre apenas os grupos que possuem tópicos selecionados
+        const initialOpen: Record<string, boolean> = {}
+        TOPIC_GROUPS.forEach((group, idx) => {
+          const hasSelected = group.topics.some((t) => userPrefs.selectedTopics.includes(t))
+          initialOpen[group.groupName] = hasSelected || idx === 0
+        })
+        setOpenGroups(initialOpen)
       })
       .catch(() => setLoadError(true))
   }, [open, prefs])
@@ -52,6 +62,13 @@ export default function SettingsPanel() {
         ? prefs.selectedTopics.filter((t) => t !== topic)
         : [...prefs.selectedTopics, topic],
     })
+  }
+
+  const toggleGroup = (groupName: string) => {
+    setOpenGroups((prev) => ({
+      ...prev,
+      [groupName]: !prev[groupName]
+    }))
   }
 
   const handleSave = async () => {
@@ -77,6 +94,14 @@ export default function SettingsPanel() {
       setTimeout(() => setSaved(false), 2000)
     }
   }
+
+  // Filtra e ordena pesos relevantes para o gráfico (despreza pesos <= 1.5)
+  const relevantWeights = (prefs?.topicWeights ?? [])
+    .filter((tw) => tw.weight > 1.5)
+    .sort((a, b) => b.weight - a.weight)
+    .slice(0, 6)
+
+  const maxWeight = relevantWeights.length > 0 ? Math.max(...relevantWeights.map((w) => w.weight)) : 10
 
   return (
     <>
@@ -155,37 +180,41 @@ export default function SettingsPanel() {
               <>
                 <div className="flex-1 px-6 py-6 space-y-8">
 
-                  {/* Transparência da IA / Pesos Aprendidos (Sem Emojis) */}
-                  {prefs.topicWeights && prefs.topicWeights.length > 0 && (
+                  {/* Gráfico Minimalista de Aprendizado Adaptativo (Despreza valores irrelevantes) */}
+                  {relevantWeights.length > 0 && (
                     <section className="p-4 bg-[#F8F7F4] border border-[#E0DED8]">
-                      <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center justify-between mb-3 border-b border-[#EAE8E1] pb-2">
                         <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#555]">
                           APRENDIZADO ADAPTATIVO DA IA
                         </p>
-                        <span className="text-[10px] text-[#888] uppercase">Pesos por leitura</span>
+                        <span className="text-[10px] text-[#888] uppercase font-medium">Relevância Aprendida</span>
                       </div>
-                      <p className="text-xs text-[#666] mb-3 leading-relaxed">
-                        Ajuste de algoritmo baseado nas suas leituras recentes:
-                      </p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {prefs.topicWeights.map((tw) => (
-                          <span
-                            key={tw.topic}
-                            className="text-xs px-2 py-1 bg-[#FFF] border border-[#E0DED8] text-[#222] font-medium flex items-center gap-1.5"
-                          >
-                            <span>{tw.topic}</span>
-                            <span className="text-[10px] font-bold text-[#666] bg-[#F0EFEA] px-1.5 py-0.5">
-                              {tw.weight.toFixed(1)}x
-                            </span>
-                          </span>
-                        ))}
+                      
+                      <div className="space-y-2.5">
+                        {relevantWeights.map((tw) => {
+                          const percentage = Math.min(100, Math.max(15, (tw.weight / maxWeight) * 100))
+                          return (
+                            <div key={tw.topic} className="flex items-center gap-3">
+                              <span className="text-xs font-semibold text-[#222] w-32 truncate">{tw.topic}</span>
+                              <div className="flex-1 h-2 bg-[#EAE8E1] overflow-hidden">
+                                <div
+                                  className="h-full bg-[#111] transition-all duration-500"
+                                  style={{ width: `${percentage}%` }}
+                                />
+                              </div>
+                              <span className="text-[10px] font-bold text-[#555] w-8 text-right font-mono">
+                                {tw.weight.toFixed(1)}x
+                              </span>
+                            </div>
+                          )
+                        })}
                       </div>
                     </section>
                   )}
 
                   {/* Conta */}
                   <section>
-                    <p className="text-[10px] uppercase tracking-[0.18em] text-[#9E9E9E] mb-4 font-bold">Conta</p>
+                    <p className="text-[10px] uppercase tracking-[0.18em] text-[#9E9E9E] mb-4 font-bold">CONTA</p>
                     <div className="space-y-4">
                       <div>
                         <label className="text-xs text-[#9E9E9E] block mb-1">Nome</label>
@@ -215,45 +244,83 @@ export default function SettingsPanel() {
                     </div>
                   </section>
 
-                  {/* Catálogo Completo de Categorias (94+ sem emojis) */}
+                  {/* Catálogo de Categorias (Grupos Colapsáveis / Accordion) */}
                   <section>
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-[10px] uppercase tracking-[0.18em] text-[#9E9E9E] font-bold">
-                        CATÁLOGO DE CATEGORIAS ({TOPIC_GROUPS.reduce((acc, g) => acc + g.topics.length, 0)})
+                        CATÁLOGO DE CATEGORIAS
                       </p>
                       <span className="text-[11px] font-medium text-[#111]">
                         {prefs.selectedTopics.length} selecionadas
                       </span>
                     </div>
                     <p className="text-xs text-[#888] mb-4 leading-relaxed">
-                      Selecione suas áreas de interesse para alimentar a curadoria de notícias.
+                      Selecione suas áreas de interesse. Clique em um grupo para expandir ou recolher.
                     </p>
 
-                    <div className="space-y-5">
-                      {TOPIC_GROUPS.map((group) => (
-                        <div key={group.groupName}>
-                          <p className="text-xs font-bold text-[#111] mb-2 uppercase tracking-wide">{group.groupName}</p>
-                          <div className="flex flex-wrap gap-1.5">
-                            {group.topics.map((topic) => {
-                              const isSelected = prefs.selectedTopics.includes(topic)
-                              return (
-                                <button
-                                  key={topic}
-                                  onClick={() => toggleTopic(topic)}
-                                  className="py-1.5 px-2.5 text-xs transition-all duration-150 font-medium"
-                                  style={{
-                                    background: isSelected ? '#111' : '#F8F7F4',
-                                    color: isSelected ? '#FFF' : '#444',
-                                    border: `1px solid ${isSelected ? '#111' : '#E0DED8'}`,
-                                  }}
-                                >
-                                  {topic}
-                                </button>
-                              )
-                            })}
+                    <div className="space-y-3">
+                      {TOPIC_GROUPS.map((group) => {
+                        const selectedInGroup = group.topics.filter((t) => prefs.selectedTopics.includes(t))
+                        const isOpen = Boolean(openGroups[group.groupName])
+
+                        return (
+                          <div key={group.groupName} className="border border-[#E0DED8] bg-[#FFF]">
+                            {/* Header Sanfona */}
+                            <button
+                              type="button"
+                              onClick={() => toggleGroup(group.groupName)}
+                              className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-[#F8F7F4] transition-colors"
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-bold text-[#111] uppercase tracking-wider">
+                                  {group.groupName}
+                                </span>
+                                {selectedInGroup.length > 0 && (
+                                  <span className="text-[10px] font-bold px-2 py-0.5 bg-[#111] text-[#FFF]">
+                                    {selectedInGroup.length}
+                                  </span>
+                                )}
+                              </div>
+                              <svg
+                                width="12"
+                                height="12"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                                strokeWidth={2}
+                                className={`text-[#888] transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </button>
+
+                            {/* Conteúdo Expansível */}
+                            {isOpen && (
+                              <div className="px-4 pb-4 pt-2 border-t border-[#F0EFEA] bg-[#F8F7F4]">
+                                <div className="flex flex-wrap gap-1.5">
+                                  {group.topics.map((topic) => {
+                                    const isSelected = prefs.selectedTopics.includes(topic)
+                                    return (
+                                      <button
+                                        key={topic}
+                                        onClick={() => toggleTopic(topic)}
+                                        className="py-1.5 px-2.5 text-xs transition-all duration-150 font-medium"
+                                        style={{
+                                          background: isSelected ? '#111' : '#FFF',
+                                          color: isSelected ? '#FFF' : '#444',
+                                          border: `1px solid ${isSelected ? '#111' : '#E0DED8'}`,
+                                        }}
+                                      >
+                                        {topic}
+                                      </button>
+                                    )
+                                  })}
+                                </div>
+                              </div>
+                            )}
                           </div>
-                        </div>
-                      ))}
+                        )
+                      })}
                     </div>
                   </section>
 
