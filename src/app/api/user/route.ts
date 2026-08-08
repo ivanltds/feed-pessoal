@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
+import { TOPICS } from '@/domain/news/types'
 
-const ALL_TOPICS = ['Tecnologia', 'Economia', 'Geopolítica', 'Ciência', 'Brasil', 'Mundo', 'Cultura', 'Esportes']
 const DEFAULT_WEIGHT = 5.0
 const UNSELECTED_WEIGHT = 1.0
 
@@ -18,7 +18,7 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 })
 
   const selectedTopics = user.topicWeights
-    .filter((w) => w.weight >= DEFAULT_WEIGHT)
+    .filter((w) => w.weight >= 2.0)
     .map((w) => w.topic)
 
   return NextResponse.json({
@@ -27,6 +27,7 @@ export async function GET() {
     editionHour: user.editionHour,
     language: (user as { language?: string }).language ?? 'pt-BR',
     selectedTopics,
+    topicWeights: user.topicWeights.map((tw) => ({ topic: tw.topic, weight: tw.weight }))
   })
 }
 
@@ -56,19 +57,24 @@ export async function PATCH(req: NextRequest) {
 
   // Atualiza tópicos se fornecidos
   let editionInvalidated = false
-  if (body.topics) {
-    const weightOps = ALL_TOPICS.map((topic) =>
-      prisma.userTopicWeight.upsert({
+  if (body.topics && Array.isArray(body.topics)) {
+    const requestedTopicsSet = new Set(body.topics)
+    const allKnownTopics = Array.from(new Set([...TOPICS, ...body.topics]))
+
+    const weightOps = allKnownTopics.map((topic) => {
+      const isSelected = requestedTopicsSet.has(topic)
+      return prisma.userTopicWeight.upsert({
         where: { userId_topic: { userId, topic } },
-        update: { weight: body.topics!.includes(topic) ? DEFAULT_WEIGHT : UNSELECTED_WEIGHT },
-        create: { userId, topic, weight: body.topics!.includes(topic) ? DEFAULT_WEIGHT : UNSELECTED_WEIGHT },
+        update: { weight: isSelected ? DEFAULT_WEIGHT : UNSELECTED_WEIGHT },
+        create: { userId, topic, weight: isSelected ? DEFAULT_WEIGHT : UNSELECTED_WEIGHT },
       })
-    )
+    })
+
     await prisma.$transaction(weightOps)
     editionInvalidated = true
   }
 
-  // Invalida edição de hoje se língua ou tópicos mudaram (resumos precisam ser regerados)
+  // Invalida edição de hoje se língua ou tópicos mudaram (para forçar o rebuild da nova edição)
   if (body.language !== undefined || body.topics) {
     const today = new Date().toISOString().split('T')[0]
     await prisma.edition.deleteMany({ where: { userId, date: today } })

@@ -1,4 +1,5 @@
 import type { RssSource } from './rss/rss-adapter'
+import { TOPIC_GROUPS } from '@/domain/news/types'
 
 export const ACTIVE_SOURCES: RssSource[] = [
   // Tecnologia & Inovação
@@ -61,5 +62,54 @@ export const ACTIVE_SOURCES: RssSource[] = [
 
 export function getSourcesByTopics(topics: string[]): RssSource[] {
   if (!topics || topics.length === 0) return ACTIVE_SOURCES
-  return ACTIVE_SOURCES.filter((s) => topics.includes(s.topic))
+
+  const matchedSources: RssSource[] = []
+
+  for (const topic of topics) {
+    // 1. Tenta encontrar fontes diretamente atribuídas a este tópico
+    const directMatches = ACTIVE_SOURCES.filter((s) => s.topic === topic)
+    if (directMatches.length > 0) {
+      matchedSources.push(...directMatches)
+      continue
+    }
+
+    // 2. Fallback inteligente: Encontra o grupo do tópico e usa fontes do mesmo grupo
+    const group = TOPIC_GROUPS.find((g) => g.topics.includes(topic))
+    if (group) {
+      const groupSources = ACTIVE_SOURCES.filter((s) => group.topics.includes(s.topic))
+      if (groupSources.length > 0) {
+        // Atribui dinamicamente ao tópico solicitado
+        matchedSources.push(
+          ...groupSources.map((s) => ({
+            ...s,
+            topic: topic
+          }))
+        )
+        continue
+      }
+    }
+
+    // 3. Fallback geral
+    const defaultSource = ACTIVE_SOURCES[matchedSources.length % ACTIVE_SOURCES.length]
+    if (defaultSource) {
+      matchedSources.push({
+        ...defaultSource,
+        topic: topic
+      })
+    }
+  }
+
+  // Remove duplicados pelo ID da fonte
+  const uniqueSources: RssSource[] = []
+  const seenIds = new Set<string>()
+
+  for (const s of matchedSources) {
+    const key = `${s.id}-${s.topic}`
+    if (!seenIds.has(key)) {
+      seenIds.add(key)
+      uniqueSources.push(s)
+    }
+  }
+
+  return uniqueSources.length > 0 ? uniqueSources : ACTIVE_SOURCES
 }

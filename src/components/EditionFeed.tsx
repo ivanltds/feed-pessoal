@@ -38,12 +38,16 @@ export default function EditionFeed({ items, editionId, date, userId }: Props) {
   const handleRebuild = useCallback(async () => {
     setRebuilding(true)
     try {
-      await fetch('/api/rebuild-edition', { method: 'POST' })
-      router.refresh()
+      const res = await fetch('/api/rebuild-edition', { method: 'POST' })
+      if (res.ok) {
+        window.location.reload()
+      }
+    } catch (err) {
+      console.error('Erro ao recriar feed:', err)
     } finally {
       setRebuilding(false)
     }
-  }, [router])
+  }, [])
   const lastItemId = items[items.length - 1]?.id
 
   // Rastreia tempo de leitura + detecta último card visível
