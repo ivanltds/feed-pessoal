@@ -203,20 +203,34 @@ export default function NewsModal({ item, onClose }: Props) {
             </button>
           </div>
 
-          {/* Painel de Transparência da Recomendação */}
+          {/* Painel de Transparência Factual da Recomendação */}
           {showAuditInfo && (
             <div className="mb-6 p-4 bg-[#FFF] border border-[#E0DED8]">
-              <div className="flex items-center justify-between mb-2 pb-2 border-b border-[#F0EFEA]">
+              <div className="flex items-center justify-between mb-3 pb-2 border-b border-[#F0EFEA]">
                 <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#555]">
-                  TRANSPARÊNCIA DA RECOMENDAÇÃO
+                  MÉTRICAS DA RECOMENDAÇÃO
                 </span>
-                <span className="text-[10px] font-bold text-[#111] bg-[#F2F1ED] px-2 py-0.5 border border-[#E0DED8]">
-                  SCORE: {item.score ? item.score.toFixed(2) : '4.50'}
-                </span>
+                {item.score !== undefined && item.score > 0 && (
+                  <span className="text-[10px] font-bold text-[#111] bg-[#F2F1ED] px-2 py-0.5 border border-[#E0DED8]">
+                    SCORE: {item.score.toFixed(2)}
+                  </span>
+                )}
               </div>
-              <p className="text-xs text-[#444] leading-relaxed">
-                Esta notícia foi selecionada para você devido ao seu interesse contínuo em <strong>{item.topic}</strong>, combinando a alta recência da publicação com o peso positivo das suas interações recentes.
-              </p>
+
+              <div className="space-y-2 text-xs text-[#444]">
+                <div className="flex justify-between items-center">
+                  <span className="text-[#777]">Tópico Atribuído:</span>
+                  <span className="font-semibold text-[#111]">{item.topic}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[#777]">Fonte de Origem:</span>
+                  <span className="font-semibold text-[#111]">{item.sourceName}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[#777]">Recência da Publicação:</span>
+                  <span className="font-semibold text-[#111]">{timeAgo(item.publishedAt)}</span>
+                </div>
+              </div>
             </div>
           )}
 

@@ -59,8 +59,27 @@ export async function buildEditionForUser(userId: string): Promise<BuildResult> 
     return 'no_items'
   }
 
+  // Filtro Rígido de Recência: Notícias devem ter no máximo 48 horas (descarta itens velhos de 81 dias)
+  const nowMs = Date.now()
+  const MAX_AGE_MS = 48 * 60 * 60 * 1000 // 48 horas
+  let freshFetched = rawFetched.filter((item) => {
+    const pubDate = new Date(item.publishedAt).getTime()
+    const age = nowMs - pubDate
+    return !isNaN(age) && age >= 0 && age <= MAX_AGE_MS
+  })
+
+  // Fallback: se poucas notícias passaram no filtro de 48h, relaxa para 7 dias no máximo
+  if (freshFetched.length < 5) {
+    const RELAXED_AGE_MS = 7 * 24 * 60 * 60 * 1000
+    freshFetched = rawFetched.filter((item) => {
+      const pubDate = new Date(item.publishedAt).getTime()
+      const age = nowMs - pubDate
+      return !isNaN(age) && age >= 0 && age <= RELAXED_AGE_MS
+    })
+  }
+
   // Classificação Semântica por IA: Garante que matérias como Putin vá para Geopolítica e não América Latina!
-  const rawItems = await classifyNewsItems(rawFetched, activeTopics, language)
+  const rawItems = await classifyNewsItems(freshFetched, activeTopics, language)
 
   if (rawItems.length === 0) {
     console.error('[EditionBuilder] Nenhum item atendeu a classificação de tópicos')
