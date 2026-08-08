@@ -3,6 +3,7 @@ import { fetchFromRss } from '@/adapters/rss/rss-adapter'
 import { getSourcesByTopics } from '@/adapters/sources'
 import { normalizeTitles } from './title-normalizer'
 import { generateSummaries } from './summary-generator'
+import { classifyNewsItems } from './topic-classifier'
 import { rankItems, type TopicWeights } from './ranker'
 import type { RawNewsItem } from '@/domain/news/types'
 
@@ -49,16 +50,24 @@ export async function buildEditionForUser(userId: string): Promise<BuildResult> 
 
   // busca notícias de todas as fontes ativas dos tópicos do usuário
   const sources = getSourcesByTopics(activeTopics)
-  const rawItems: RawNewsItem[] = (
+  const rawFetched: RawNewsItem[] = (
     await Promise.all(sources.map(fetchFromRss))
   ).flat()
 
-  if (rawItems.length === 0) {
+  if (rawFetched.length === 0) {
     console.error('[EditionBuilder] Nenhum item encontrado nas fontes')
     return 'no_items'
   }
 
-  // rankeia e seleciona 7 itens
+  // Classificação Semântica por IA: Garante que matérias como Putin vá para Geopolítica e não América Latina!
+  const rawItems = await classifyNewsItems(rawFetched, activeTopics, language)
+
+  if (rawItems.length === 0) {
+    console.error('[EditionBuilder] Nenhum item atendeu a classificação de tópicos')
+    return 'no_items'
+  }
+
+  // rankeia e seleciona os itens mais relevantes
   const rankedItems = rankItems(rawItems, topicWeights)
 
   // normaliza títulos e gera resumos em paralelo

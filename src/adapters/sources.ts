@@ -66,36 +66,27 @@ export function getSourcesByTopics(topics: string[]): RssSource[] {
   const matchedSources: RssSource[] = []
 
   for (const topic of topics) {
-    // 1. Tenta encontrar fontes diretamente atribuídas a este tópico
+    // 1. Fontes diretamente associadas
     const directMatches = ACTIVE_SOURCES.filter((s) => s.topic === topic)
     if (directMatches.length > 0) {
       matchedSources.push(...directMatches)
       continue
     }
 
-    // 2. Fallback inteligente: Encontra o grupo do tópico e usa fontes do mesmo grupo
+    // 2. Fontes do mesmo grupo temático (sem sobrescrever a tag da fonte!)
     const group = TOPIC_GROUPS.find((g) => g.topics.includes(topic))
     if (group) {
       const groupSources = ACTIVE_SOURCES.filter((s) => group.topics.includes(s.topic))
       if (groupSources.length > 0) {
-        // Atribui dinamicamente ao tópico solicitado
-        matchedSources.push(
-          ...groupSources.map((s) => ({
-            ...s,
-            topic: topic
-          }))
-        )
+        matchedSources.push(...groupSources)
         continue
       }
     }
 
-    // 3. Fallback geral
+    // 3. Fallback geral sem alterar a tag da fonte
     const defaultSource = ACTIVE_SOURCES[matchedSources.length % ACTIVE_SOURCES.length]
     if (defaultSource) {
-      matchedSources.push({
-        ...defaultSource,
-        topic: topic
-      })
+      matchedSources.push(defaultSource)
     }
   }
 
@@ -104,9 +95,8 @@ export function getSourcesByTopics(topics: string[]): RssSource[] {
   const seenIds = new Set<string>()
 
   for (const s of matchedSources) {
-    const key = `${s.id}-${s.topic}`
-    if (!seenIds.has(key)) {
-      seenIds.add(key)
+    if (!seenIds.has(s.id)) {
+      seenIds.add(s.id)
       uniqueSources.push(s)
     }
   }
