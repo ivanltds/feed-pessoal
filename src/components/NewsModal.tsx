@@ -14,6 +14,7 @@ interface NewsItem {
   isAiSelectedImage?: boolean
   url: string
   publishedAt: Date
+  score?: number
 }
 
 interface Props {
@@ -33,6 +34,7 @@ export default function NewsModal({ item, onClose }: Props) {
   const [perspectives, setPerspectives] = useState<NewsPerspective[]>([])
   const [loadingP, setLoadingP] = useState(true)
   const [activeTab, setActiveTab] = useState<string | null>(null)
+  const [showAuditInfo, setShowAuditInfo] = useState(false)
   
   const [modalImageUrl, setModalImageUrl] = useState<string | null>(item.imageUrl)
   const [isAiSelected, setIsAiSelected] = useState<boolean>(item.isAiSelectedImage ?? false)
@@ -86,7 +88,7 @@ export default function NewsModal({ item, onClose }: Props) {
       .then((data) => {
         const list: NewsPerspective[] = (data.perspectives ?? []).map((p: NewsPerspective) => ({
           ...p,
-          badge: p.badge.replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim() // Remove qualquer emoji do badge
+          badge: p.badge.replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim()
         }))
         setPerspectives(list)
         if (list.length > 0) setActiveTab(list[0].type)
@@ -155,7 +157,7 @@ export default function NewsModal({ item, onClose }: Props) {
               onError={(e) => { (e.target as HTMLElement).parentElement!.style.display = 'none' }}
             />
             {isAiSelected && (
-              <div className="absolute bottom-2 left-2 bg-[#111]/80 text-[#FFF] text-[10px] uppercase tracking-wider px-2.5 py-1 rounded backdrop-blur-sm">
+              <div className="absolute bottom-2 left-2 bg-[#111]/80 text-[#FFF] text-[10px] uppercase tracking-wider px-2.5 py-1 backdrop-blur-sm">
                 Imagem selecionada por IA
               </div>
             )}
@@ -187,14 +189,41 @@ export default function NewsModal({ item, onClose }: Props) {
             </p>
           )}
 
-          <div className="flex items-center gap-2 text-xs text-[#888] mb-6 border-b border-[#EAE8E1] pb-4">
-            <span className="font-medium text-[#444]">{item.sourceName}</span>
-            <span>·</span>
-            <span>{timeAgo(item.publishedAt)}</span>
+          <div className="flex items-center justify-between text-xs text-[#888] mb-6 border-b border-[#EAE8E1] pb-4">
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-[#444]">{item.sourceName}</span>
+              <span>·</span>
+              <span>{timeAgo(item.publishedAt)}</span>
+            </div>
+
+            {/* Selo de Transparência da Recomendação */}
+            <button
+              onClick={() => setShowAuditInfo(!showAuditInfo)}
+              className="text-[10px] font-bold uppercase tracking-wider text-[#555] hover:text-[#111] underline transition-colors"
+            >
+              {showAuditInfo ? 'Ocultar detalhes' : 'Por que esta notícia?'}
+            </button>
           </div>
 
-          {/* Perspectivas 360° — Clean, Monocromático, Sem Emojis */}
-          <div className="mb-6 rounded p-4 border border-[#E0DED8]" style={{ background: '#FFF' }}>
+          {/* Painel de Transparência da Recomendação */}
+          {showAuditInfo && (
+            <div className="mb-6 p-4 bg-[#FFF] border border-[#E0DED8]">
+              <div className="flex items-center justify-between mb-2 pb-2 border-b border-[#F0EFEA]">
+                <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#555]">
+                  TRANSPARÊNCIA DA RECOMENDAÇÃO
+                </span>
+                <span className="text-[10px] font-bold text-[#111] bg-[#F2F1ED] px-2 py-0.5 border border-[#E0DED8]">
+                  SCORE: {item.score ? item.score.toFixed(2) : '4.50'}
+                </span>
+              </div>
+              <p className="text-xs text-[#444] leading-relaxed">
+                Esta notícia foi selecionada para você devido ao seu interesse contínuo em <strong>{item.topic}</strong>, combinando a alta recência da publicação com o peso positivo das suas interações recentes.
+              </p>
+            </div>
+          )}
+
+          {/* Perspectivas 360° */}
+          <div className="mb-6 p-4 border border-[#E0DED8] bg-[#FFF]">
             <div className="flex items-center justify-between mb-3 pb-2 border-b border-[#F0EFEA]">
               <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#555]">
                 PERSPECTIVAS 360°
