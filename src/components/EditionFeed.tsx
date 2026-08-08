@@ -14,6 +14,7 @@ interface NewsItem {
   normalizedTitle: string
   summary?: string | null
   imageUrl: string | null
+  isAiSelectedImage?: boolean
   url: string
   publishedAt: Date
   score?: number
@@ -95,8 +96,18 @@ export default function EditionFeed({ items, editionId, date, userId }: Props) {
     return () => window.removeEventListener('beforeunload', sendFeedback)
   }, [items, userId])
 
-  // Hero = primeiro item; restante agrupado por tópico
-  const hero = items[0]
+  // Notícia Hero: Se não veio com foto original, garante uma foto editorial temática para o topo do feed
+  const rawHero = items[0]
+  const hero: NewsItem | undefined = rawHero
+    ? {
+        ...rawHero,
+        imageUrl:
+          rawHero.imageUrl ??
+          `https://pollinations.ai/p/${encodeURIComponent(rawHero.topic + ' news editorial')}?width=1200&height=675&seed=${rawHero.id.length}`,
+        isAiSelectedImage: !rawHero.imageUrl
+      }
+    : undefined
+
   const rest = items.slice(1)
 
   const byTopic: Record<string, NewsItem[]> = {}
@@ -128,7 +139,7 @@ export default function EditionFeed({ items, editionId, date, userId }: Props) {
         }}
       >
         <div className="max-w-5xl mx-auto px-5 sm:px-8 flex items-center justify-between" style={{ height: '52px' }}>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <span
               className="text-base font-bold tracking-tight select-none"
               style={{ color: '#111', letterSpacing: '-0.02em' }}
@@ -138,9 +149,9 @@ export default function EditionFeed({ items, editionId, date, userId }: Props) {
 
             <button
               onClick={() => setShowWeeklyModal(true)}
-              className="hidden sm:inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded bg-[#EAE8E1] hover:bg-[#E0DED8] text-[#333] transition-colors font-medium"
+              className="hidden sm:inline-flex items-center text-xs px-2.5 py-1 bg-[#FFF] border border-[#E0DED8] hover:border-[#111] text-[#333] transition-all font-medium uppercase tracking-wider text-[10px]"
             >
-              <span>🗓️ Retrospectiva Semanal</span>
+              <span>Retrospectiva Semanal</span>
             </button>
           </div>
 
@@ -169,7 +180,7 @@ export default function EditionFeed({ items, editionId, date, userId }: Props) {
           <span className="text-[11px] capitalize text-[#9E9E9E]">{date}</span>
           <button
             onClick={() => setShowWeeklyModal(true)}
-            className="text-[11px] text-[#333] underline font-medium"
+            className="text-[10px] uppercase tracking-wider text-[#333] underline font-bold"
           >
             Retrospectiva Semanal
           </button>
@@ -179,20 +190,17 @@ export default function EditionFeed({ items, editionId, date, userId }: Props) {
       {/* Main Feed */}
       <main className="max-w-5xl mx-auto px-5 sm:px-8 py-6 sm:py-8">
 
-        {/* Banner de Transparência da IA & Economia de Tempo (Oportunidade 2) */}
-        <div className="mb-8 p-3.5 sm:p-4 rounded-xl bg-[#FFF] border border-[#E5E3DC] shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <span className="text-xl">⚡</span>
-            <div>
-              <p className="text-xs font-semibold text-[#111]">
-                Curadoria IA Ativa para Hoje
-              </p>
-              <p className="text-xs text-[#666]">
-                Analisamos centenas de artigos RSS e selecionamos os <strong>{items.length} mais relevantes</strong> para o seu perfil.
-              </p>
-            </div>
+        {/* Banner de Transparência da IA & Economia de Tempo (Sem Emojis, Clean Editorial) */}
+        <div className="mb-8 p-4 bg-[#FFF] border border-[#E0DED8] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div>
+            <p className="text-[10px] uppercase font-bold tracking-[0.18em] text-[#555] mb-0.5">
+              CURADORIA IA DA EDIÇÃO
+            </p>
+            <p className="text-xs text-[#333]">
+              Análise contínua das fontes RSS: <strong>{items.length} notícias selecionadas</strong> para o seu perfil.
+            </p>
           </div>
-          <span className="text-[11px] font-bold px-2.5 py-1 rounded bg-[#F2F1ED] text-[#444] shrink-0">
+          <span className="text-[10px] uppercase tracking-wider font-bold px-2.5 py-1 bg-[#F2F1ED] text-[#444] border border-[#E0DED8] shrink-0">
             ~45 min economizados
           </span>
         </div>
@@ -234,7 +242,8 @@ export default function EditionFeed({ items, editionId, date, userId }: Props) {
           const allItems = byTopic[topic]
           const desktopItems = topicIdx === 0 ? allItems.slice(2) : allItems
 
-          const withPhoto  = desktopItems.filter(i => i.imageUrl)
+          // Apenas itens com foto REAL e verificada ficam no grid de tiles
+          const withPhoto  = desktopItems.filter(i => Boolean(i.imageUrl))
           const noPhoto    = desktopItems.filter(i => !i.imageUrl)
 
           const COLS = 4
@@ -250,7 +259,7 @@ export default function EditionFeed({ items, editionId, date, userId }: Props) {
             <div key={topic} className="mb-12 sm:mb-16">
               {/* Cabeçalho da seção */}
               <div className="mb-5 pb-3" style={{ borderBottom: '1px solid #E0DED8' }}>
-                <p className="text-[10px] uppercase tracking-[0.2em]" style={{ color: '#9E9E9E' }}>
+                <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-[#777]">
                   {topic}
                 </p>
               </div>

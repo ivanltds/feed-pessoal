@@ -117,7 +117,7 @@ export default function SettingsPanel() {
         <div className="fixed inset-0 flex justify-end" style={{ zIndex: 9999 }}>
           <div
             className="absolute inset-0"
-            style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(2px)' }}
+            style={{ background: 'rgba(0,0,0,0.35)' }}
             onClick={() => setOpen(false)}
           />
 
@@ -128,8 +128,8 @@ export default function SettingsPanel() {
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-5" style={{ borderBottom: '1px solid #E0DED8' }}>
               <div>
-                <span className="text-base font-bold text-[#111] tracking-tight block">Preferências do Feed</span>
-                <span className="text-xs text-[#888]">Personalize tópicos e comportamento da IA</span>
+                <span className="text-sm font-bold text-[#111] uppercase tracking-wider block">Preferências do Feed</span>
+                <span className="text-xs text-[#888]">Personalização e Inteligência</span>
               </div>
               <button onClick={() => setOpen(false)} className="text-[#9E9E9E] hover:text-[#111] transition-colors p-1">
                 <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
@@ -155,26 +155,26 @@ export default function SettingsPanel() {
               <>
                 <div className="flex-1 px-6 py-6 space-y-8">
 
-                  {/* Transparência da IA / Pesos Aprendidos */}
+                  {/* Transparência da IA / Pesos Aprendidos (Sem Emojis) */}
                   {prefs.topicWeights && prefs.topicWeights.length > 0 && (
-                    <section className="p-4 rounded-xl bg-[#F8F7F4] border border-[#E5E3DC]">
+                    <section className="p-4 bg-[#F8F7F4] border border-[#E0DED8]">
                       <div className="flex items-center justify-between mb-2">
                         <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#555]">
-                          🤖 Aprendizado Continuo da IA
+                          APRENDIZADO ADAPTATIVO DA IA
                         </p>
-                        <span className="text-[10px] text-[#888]">Ajuste automático por leitura</span>
+                        <span className="text-[10px] text-[#888] uppercase">Pesos por leitura</span>
                       </div>
-                      <p className="text-xs text-[#666] mb-3">
-                        A IA aprendeu seus interesses com base nas matérias que você leu e aprofundou:
+                      <p className="text-xs text-[#666] mb-3 leading-relaxed">
+                        Ajuste de algoritmo baseado nas suas leituras recentes:
                       </p>
                       <div className="flex flex-wrap gap-1.5">
                         {prefs.topicWeights.map((tw) => (
                           <span
                             key={tw.topic}
-                            className="text-xs px-2.5 py-1 rounded-md bg-[#FFF] border border-[#E0DED8] text-[#222] font-medium flex items-center gap-1.5"
+                            className="text-xs px-2 py-1 bg-[#FFF] border border-[#E0DED8] text-[#222] font-medium flex items-center gap-1.5"
                           >
                             <span>{tw.topic}</span>
-                            <span className="text-[10px] font-bold text-[#666] bg-[#F0EFEA] px-1.5 py-0.5 rounded">
+                            <span className="text-[10px] font-bold text-[#666] bg-[#F0EFEA] px-1.5 py-0.5">
                               {tw.weight.toFixed(1)}x
                             </span>
                           </span>
@@ -185,7 +185,7 @@ export default function SettingsPanel() {
 
                   {/* Conta */}
                   <section>
-                    <p className="text-[10px] uppercase tracking-[0.18em] text-[#9E9E9E] mb-4">Conta</p>
+                    <p className="text-[10px] uppercase tracking-[0.18em] text-[#9E9E9E] mb-4 font-bold">Conta</p>
                     <div className="space-y-4">
                       <div>
                         <label className="text-xs text-[#9E9E9E] block mb-1">Nome</label>
@@ -215,22 +215,24 @@ export default function SettingsPanel() {
                     </div>
                   </section>
 
-                  {/* Catálogo Completo de Categorias */}
+                  {/* Catálogo Completo de Categorias (94+ sem emojis) */}
                   <section>
                     <div className="flex items-center justify-between mb-2">
-                      <p className="text-[10px] uppercase tracking-[0.18em] text-[#9E9E9E]">Catálogo de Categorias (30+)</p>
+                      <p className="text-[10px] uppercase tracking-[0.18em] text-[#9E9E9E] font-bold">
+                        CATÁLOGO DE CATEGORIAS ({TOPIC_GROUPS.reduce((acc, g) => acc + g.topics.length, 0)})
+                      </p>
                       <span className="text-[11px] font-medium text-[#111]">
                         {prefs.selectedTopics.length} selecionadas
                       </span>
                     </div>
-                    <p className="text-xs text-[#888] mb-4">
-                      Selecione suas áreas de interesse. Cada tópico selecionado ativará fontes RSS especializadas.
+                    <p className="text-xs text-[#888] mb-4 leading-relaxed">
+                      Selecione suas áreas de interesse para alimentar a curadoria de notícias.
                     </p>
 
                     <div className="space-y-5">
                       {TOPIC_GROUPS.map((group) => (
                         <div key={group.groupName}>
-                          <p className="text-xs font-bold text-[#444] mb-2">{group.groupName}</p>
+                          <p className="text-xs font-bold text-[#111] mb-2 uppercase tracking-wide">{group.groupName}</p>
                           <div className="flex flex-wrap gap-1.5">
                             {group.topics.map((topic) => {
                               const isSelected = prefs.selectedTopics.includes(topic)
@@ -238,7 +240,7 @@ export default function SettingsPanel() {
                                 <button
                                   key={topic}
                                   onClick={() => toggleTopic(topic)}
-                                  className="py-1.5 px-3 text-xs transition-all duration-150 rounded-md font-medium"
+                                  className="py-1.5 px-2.5 text-xs transition-all duration-150 font-medium"
                                   style={{
                                     background: isSelected ? '#111' : '#F8F7F4',
                                     color: isSelected ? '#FFF' : '#444',
@@ -257,20 +259,20 @@ export default function SettingsPanel() {
 
                   {/* Horário */}
                   <section>
-                    <p className="text-[10px] uppercase tracking-[0.18em] text-[#9E9E9E] mb-3">Horário da edição</p>
+                    <p className="text-[10px] uppercase tracking-[0.18em] text-[#9E9E9E] mb-3 font-bold">HORÁRIO DA EDIÇÃO</p>
                     <div className="grid grid-cols-2 gap-2">
                       {([7, 19] as const).map((hour) => (
                         <button
                           key={hour}
                           onClick={() => setPrefs({ ...prefs, editionHour: hour })}
-                          className="py-2.5 text-center text-xs font-medium rounded-md transition-colors"
+                          className="py-2.5 text-center text-xs font-medium transition-colors"
                           style={{
                             background: prefs.editionHour === hour ? '#111' : '#F8F7F4',
                             color: prefs.editionHour === hour ? '#FFF' : '#5C5C5C',
                             border: `1px solid ${prefs.editionHour === hour ? '#111' : '#E0DED8'}`,
                           }}
                         >
-                          {hour === 7 ? '☀️ Manhã — 7h' : '🌙 Noite — 19h'}
+                          {hour === 7 ? 'Manhã — 07:00' : 'Noite — 19:00'}
                         </button>
                       ))}
                     </div>
@@ -283,7 +285,7 @@ export default function SettingsPanel() {
                   <button
                     onClick={handleSave}
                     disabled={saving || prefs.selectedTopics.length === 0}
-                    className="w-full py-3 text-sm font-semibold rounded-md transition-opacity duration-150 shadow-sm"
+                    className="w-full py-3 text-xs uppercase tracking-wider font-semibold transition-opacity duration-150"
                     style={{
                       background: '#111',
                       color: '#FFF',

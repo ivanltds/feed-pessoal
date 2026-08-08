@@ -11,6 +11,7 @@ interface NewsItem {
   normalizedTitle: string
   summary?: string | null
   imageUrl: string | null
+  isAiSelectedImage?: boolean
   url: string
   publishedAt: Date
 }
@@ -32,6 +33,11 @@ export default function NewsModal({ item, onClose }: Props) {
   const [perspectives, setPerspectives] = useState<NewsPerspective[]>([])
   const [loadingP, setLoadingP] = useState(true)
   const [activeTab, setActiveTab] = useState<string | null>(null)
+  
+  const [modalImageUrl, setModalImageUrl] = useState<string | null>(item.imageUrl)
+  const [isAiSelected, setIsAiSelected] = useState<boolean>(item.isAiSelectedImage ?? false)
+  const [enrichingImage, setEnrichingImage] = useState<boolean>(!item.imageUrl)
+
   const { openQuestion } = useDeepDive()
 
   // Fecha com ESC
@@ -47,6 +53,27 @@ export default function NewsModal({ item, onClose }: Props) {
     return () => { document.body.style.overflow = '' }
   }, [])
 
+  // Se a matéria não veio com imagem da fonte, chama o Agente Avaliador de Fotos por IA
+  useEffect(() => {
+    if (!item.imageUrl) {
+      setEnrichingImage(true)
+      fetch('/api/enrich-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newsItemId: item.id })
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.imageUrl) {
+            setModalImageUrl(data.imageUrl)
+            setIsAiSelected(true)
+          }
+        })
+        .catch(() => {})
+        .finally(() => setEnrichingImage(false))
+    }
+  }, [item.id, item.imageUrl])
+
   // Busca perspectivas ao abrir
   useEffect(() => {
     setLoadingP(true)
@@ -57,7 +84,10 @@ export default function NewsModal({ item, onClose }: Props) {
     })
       .then((r) => r.json())
       .then((data) => {
-        const list: NewsPerspective[] = data.perspectives ?? []
+        const list: NewsPerspective[] = (data.perspectives ?? []).map((p: NewsPerspective) => ({
+          ...p,
+          badge: p.badge.replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim() // Remove qualquer emoji do badge
+        }))
         setPerspectives(list)
         if (list.length > 0) setActiveTab(list[0].type)
       })
@@ -68,7 +98,7 @@ export default function NewsModal({ item, onClose }: Props) {
   return (
     <div
       className="fixed inset-0 flex items-end sm:items-center justify-center"
-      style={{ zIndex: 9000, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}
+      style={{ zIndex: 9000, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(2px)' }}
       onClick={onClose}
     >
       <div
@@ -76,16 +106,14 @@ export default function NewsModal({ item, onClose }: Props) {
         style={{
           background: '#F8F7F4',
           maxHeight: '92vh',
-          borderRadius: '12px 12px 0 0',
           borderTop: '1px solid #E0DED8',
-          animation: 'slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) both',
-          boxShadow: '0 20px 50px rgba(0,0,0,0.2)'
+          animation: 'slideUp 0.2s cubic-bezier(0.16, 1, 0.3, 1) both',
         }}
         onClick={(e) => e.stopPropagation()}
       >
         <style>{`
           @keyframes slideUp {
-            from { opacity: 0; transform: translateY(20px); }
+            from { opacity: 0; transform: translateY(16px); }
             to   { opacity: 1; transform: translateY(0); }
           }
           @keyframes pulse {
@@ -100,67 +128,78 @@ export default function NewsModal({ item, onClose }: Props) {
           style={{ borderBottom: '1px solid #EAE8E1' }}
         >
           <span
-            className="text-[11px] font-semibold uppercase tracking-[0.18em] px-2.5 py-1 rounded"
-            style={{ background: '#EAE8E1', color: '#4A4A4A' }}
+            className="text-[10px] font-semibold uppercase tracking-[0.2em]"
+            style={{ color: '#777' }}
           >
             {item.topic}
           </span>
           <button
             onClick={onClose}
             style={{ color: '#888', lineHeight: 1 }}
-            className="hover:text-[#111] transition-colors p-1 rounded-full hover:bg-[#EAE8E1]"
+            className="hover:text-[#111] transition-colors p-1"
             aria-label="Fechar"
           >
-            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
+            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
-        {/* Imagem (apenas se for válida) */}
-        {item.imageUrl && (
-          <div className="w-full" style={{ aspectRatio: '16/9', overflow: 'hidden', background: '#E3E2DC' }}>
+        {/* Imagem (Original ou Selecionada por IA) */}
+        {modalImageUrl ? (
+          <div className="w-full relative" style={{ aspectRatio: '16/9', overflow: 'hidden', background: '#E3E2DC' }}>
             <img
-              src={item.imageUrl}
+              src={modalImageUrl}
               alt=""
               className="w-full h-full object-cover"
               onError={(e) => { (e.target as HTMLElement).parentElement!.style.display = 'none' }}
             />
+            {isAiSelected && (
+              <div className="absolute bottom-2 left-2 bg-[#111]/80 text-[#FFF] text-[10px] uppercase tracking-wider px-2.5 py-1 rounded backdrop-blur-sm">
+                Imagem selecionada por IA
+              </div>
+            )}
           </div>
-        )}
+        ) : enrichingImage ? (
+          <div className="w-full flex items-center justify-center bg-[#E3E2DC] aspect-[16/9]">
+            <p className="text-xs text-[#777] uppercase tracking-widest animate-pulse">
+              Curadoria de imagem por IA...
+            </p>
+          </div>
+        ) : null}
 
         {/* Conteúdo */}
         <div className="px-6 py-6">
           <h2
-            className="text-xl sm:text-2xl font-bold leading-snug mb-3"
-            style={{ color: '#111', letterSpacing: '-0.015em' }}
+            className="text-xl sm:text-2xl font-bold leading-snug mb-3 text-[#111]"
+            style={{ letterSpacing: '-0.01em' }}
           >
             {item.normalizedTitle}
           </h2>
 
           {item.summary ? (
-            <p className="text-sm leading-relaxed mb-4 text-[#333]">
+            <p className="text-sm leading-relaxed mb-4 text-[#3A3A3A]">
               {item.summary}
             </p>
           ) : (
             <p className="text-sm mb-4 italic text-[#888]">
-              Resumo gerado em breve.
+              Resumo não disponível.
             </p>
           )}
 
-          <div className="flex items-center gap-2 text-xs text-[#888] mb-6">
-            <span className="font-medium text-[#555]">{item.sourceName}</span>
+          <div className="flex items-center gap-2 text-xs text-[#888] mb-6 border-b border-[#EAE8E1] pb-4">
+            <span className="font-medium text-[#444]">{item.sourceName}</span>
             <span>·</span>
             <span>{timeAgo(item.publishedAt)}</span>
           </div>
 
-          {/* Perspectivas 360° */}
-          <div className="mb-6 rounded-lg p-4" style={{ background: '#FFF', border: '1px solid #E5E3DC' }}>
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#666]">
-                🔍 Perspectivas 360° (Análise IA)
+          {/* Perspectivas 360° — Clean, Monocromático, Sem Emojis */}
+          <div className="mb-6 rounded p-4 border border-[#E0DED8]" style={{ background: '#FFF' }}>
+            <div className="flex items-center justify-between mb-3 pb-2 border-b border-[#F0EFEA]">
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#555]">
+                PERSPECTIVAS 360°
               </p>
-              <span className="text-[10px] text-[#999]">Leitura em 1 clique</span>
+              <span className="text-[10px] text-[#999] uppercase tracking-wider">Leitura em 1 clique</span>
             </div>
 
             {loadingP ? (
@@ -169,9 +208,8 @@ export default function NewsModal({ item, onClose }: Props) {
                   <div
                     key={i}
                     style={{
-                      height: '42px',
+                      height: '38px',
                       background: '#F0EFEA',
-                      borderRadius: '6px',
                       animation: 'pulse 1.4s ease infinite',
                       animationDelay: `${i * 0.15}s`,
                     }}
@@ -180,19 +218,18 @@ export default function NewsModal({ item, onClose }: Props) {
               </div>
             ) : perspectives.length > 0 ? (
               <div className="space-y-2">
-                {/* Selector de Abas */}
-                <div className="flex gap-1.5 p-1 rounded-md mb-3" style={{ background: '#F2F1ED' }}>
+                {/* Selector de Abas Monocromáticas */}
+                <div className="flex gap-1 p-1 mb-3 bg-[#F2F1ED] border border-[#E0DED8]">
                   {perspectives.map((p) => {
                     const isActive = activeTab === p.type
                     return (
                       <button
                         key={p.type}
                         onClick={() => setActiveTab(p.type)}
-                        className="flex-1 py-1.5 px-2 rounded text-xs font-medium transition-all text-center"
+                        className="flex-1 py-1.5 px-2 text-[11px] font-medium tracking-tight transition-all text-center uppercase"
                         style={{
-                          background: isActive ? '#FFF' : 'transparent',
-                          color: isActive ? '#111' : '#666',
-                          boxShadow: isActive ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                          background: isActive ? '#111' : 'transparent',
+                          color: isActive ? '#FFF' : '#5C5C5C',
                         }}
                       >
                         {p.badge}
@@ -207,22 +244,21 @@ export default function NewsModal({ item, onClose }: Props) {
                   .map((p) => (
                     <div
                       key={p.type}
-                      className="p-3.5 rounded-md transition-all"
-                      style={{ background: '#FBFBFA', border: '1px solid #EAE8E1' }}
+                      className="p-3.5 border border-[#E0DED8] bg-[#F8F7F4]"
                     >
-                      <h4 className="text-sm font-semibold text-[#111] mb-1">{p.title}</h4>
+                      <h4 className="text-xs font-bold uppercase tracking-wide text-[#111] mb-1">{p.title}</h4>
                       <p className="text-xs text-[#444] leading-relaxed mb-3">{p.summary}</p>
                       
                       <button
                         onClick={() => openQuestion({
                           id: `p-${item.id}-${p.type}`,
-                          text: `Me conte mais sobre a perspectiva '${p.title}' da notícia '${item.normalizedTitle}'`,
+                          text: `Aprofundar na perspectiva '${p.title}' sobre '${item.normalizedTitle}'`,
                           topic: item.topic,
                           newsItemId: item.id
                         })}
-                        className="text-[11px] font-medium text-[#111] underline hover:text-[#555] flex items-center gap-1"
+                        className="text-[10px] uppercase tracking-wider font-semibold text-[#111] hover:underline flex items-center gap-1"
                       >
-                        <span>Aprofundar no chat</span>
+                        <span>Aprofundar via chat</span>
                         <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                         </svg>
@@ -231,7 +267,7 @@ export default function NewsModal({ item, onClose }: Props) {
                   ))}
               </div>
             ) : (
-              <p className="text-xs text-[#888]">Perspectivas indisponíveis para este artigo.</p>
+              <p className="text-xs text-[#888]">Análise indisponível para este artigo.</p>
             )}
           </div>
 
@@ -239,7 +275,7 @@ export default function NewsModal({ item, onClose }: Props) {
             href={item.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-between w-full px-5 py-3.5 text-sm font-medium text-white rounded-md transition-opacity hover:opacity-90 shadow-sm"
+            className="flex items-center justify-between w-full px-5 py-3 text-xs uppercase tracking-wider font-semibold text-white transition-opacity hover:opacity-90"
             style={{ background: '#111' }}
           >
             <span>Ler matéria original</span>

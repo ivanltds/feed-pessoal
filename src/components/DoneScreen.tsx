@@ -52,52 +52,51 @@ export default function DoneScreen({ userId, topItem, editionId }: Props) {
       `}</style>
 
       {/* Linha divisória + mensagem de conclusão */}
-      <div className="pt-10 mb-8 border-t border-[#E5E3DC] text-center">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#EAE8E1] text-xs font-semibold text-[#444] mb-3">
-          <span>✨</span>
-          <span>VOCÊ ESTÁ 100% EM DIA</span>
-        </div>
-        <p className="text-xs text-[#777]">
+      <div className="pt-10 mb-8 border-t border-[#E0DED8] text-center">
+        <p className="text-[10px] uppercase tracking-[0.2em] text-[#777] mb-2 font-bold">
+          VOCÊ ESTÁ EM DIA COM A EDIÇÃO
+        </p>
+        <p className="text-xs text-[#9E9E9E]">
           {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
         </p>
       </div>
 
       {/* Briefing Executivo em 3 Destaques */}
-      <div className="bg-[#FFF] rounded-xl p-5 border border-[#E5E3DC] shadow-sm mb-6">
-        <div className="flex items-center justify-between mb-4 pb-3 border-b border-[#F0EFEA]">
-          <h3 className="text-sm font-bold text-[#111] uppercase tracking-wider flex items-center gap-2">
-            <span>📌</span> Resumo Executivo da Edição
+      <div className="bg-[#FFF] p-5 border border-[#E0DED8] mb-6">
+        <div className="flex items-center justify-between mb-4 pb-3 border-b border-[#E0DED8]">
+          <h3 className="text-xs font-bold text-[#111] uppercase tracking-[0.18em]">
+            RESUMO EXECUTIVO DA EDIÇÃO
           </h3>
-          <span className="text-[11px] text-[#888]">3 Pontos Chave</span>
+          <span className="text-[10px] text-[#9E9E9E] uppercase tracking-wider">3 Destaques</span>
         </div>
 
         {loading ? (
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-10 bg-[#F2F1ED] rounded animate-pulse" />
+              <div key={i} className="h-8 bg-[#F2F1ED] animate-pulse" />
             ))}
           </div>
         ) : briefing?.highlights && briefing.highlights.length > 0 ? (
           <ul className="space-y-3">
             {briefing.highlights.map((h, idx) => (
-              <li key={idx} className="flex gap-3 text-sm text-[#333] leading-relaxed">
-                <span className="shrink-0 w-5 h-5 rounded-full bg-[#F2F1ED] text-[#111] text-xs font-bold flex items-center justify-center">
+              <li key={idx} className="flex gap-3 text-xs text-[#333] leading-relaxed">
+                <span className="shrink-0 text-[10px] font-bold text-[#111] bg-[#F2F1ED] w-5 h-5 flex items-center justify-center border border-[#E0DED8]">
                   {idx + 1}
                 </span>
-                <span>{h}</span>
+                <span>{h.replace(/[\u{1F300}-\u{1F9FF}]/gu, '')}</span>
               </li>
             ))}
           </ul>
         ) : (
-          <p className="text-xs text-[#777]">Você conferiu todas as principais notícias do seu feed de hoje.</p>
+          <p className="text-xs text-[#777]">Você conferiu todas as matérias da sua edição.</p>
         )}
       </div>
 
       {/* Pílulas de Aprofundamento */}
       {briefing?.suggestedPills && briefing.suggestedPills.length > 0 && (
         <div className="mb-6">
-          <p className="text-xs font-bold text-[#777] uppercase tracking-wider mb-3">
-            💡 Quer se aprofundar em algo?
+          <p className="text-[10px] font-bold text-[#777] uppercase tracking-[0.18em] mb-3">
+            TÓPICOS DE APROFUNDAMENTO
           </p>
 
           <div className="flex flex-wrap gap-2">
@@ -112,10 +111,10 @@ export default function DoneScreen({ userId, topItem, editionId }: Props) {
                     newsItemId: topItem.id
                   })
                 }
-                className="px-3.5 py-2.5 rounded-lg text-xs font-medium bg-[#FFF] text-[#222] border border-[#E0DED8] hover:border-[#111] hover:bg-[#F8F7F4] transition-all flex items-center gap-2 shadow-sm text-left"
+                className="px-3 py-2 text-xs font-medium bg-[#FFF] text-[#222] border border-[#E0DED8] hover:border-[#111] transition-all flex items-center gap-2 text-left"
               >
-                <span>{pill.label}</span>
-                <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24" className="opacity-50">
+                <span>{pill.label.replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim()}</span>
+                <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24" className="opacity-40">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </button>

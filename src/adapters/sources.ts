@@ -1,10 +1,5 @@
 import type { RssSource } from './rss/rss-adapter'
 
-/**
- * Registry de fontes ativas.
- * Para adicionar uma nova fonte: crie um objeto RssSource e adicione ao array.
- * Para remover/desativar: comente ou remova a entrada. Sem refatoração necessária.
- */
 export const ACTIVE_SOURCES: RssSource[] = [
   // Tecnologia & Inovação
   { id: 'techcrunch', name: 'TechCrunch', url: 'https://techcrunch.com/feed/', topic: 'Tecnologia' },
@@ -17,6 +12,8 @@ export const ACTIVE_SOURCES: RssSource[] = [
   { id: 'thehack', name: 'The Hack', url: 'https://thehack.com.br/feed/', topic: 'Cybersecurity' },
   { id: 'cointelegraph-br', name: 'Cointelegraph Brasil', url: 'https://br.cointelegraph.com/rss', topic: 'Cripto & Web3' },
   { id: 'ign-brasil', name: 'IGN Brasil', url: 'https://br.ign.com/feed.xml', topic: 'Games & Esports' },
+  { id: 'kdnuggets', name: 'KDnuggets', url: 'https://www.kdnuggets.com/feed', topic: 'Machine Learning & Dados' },
+  { id: 'anandtech', name: 'AnandTech', url: 'https://www.anandtech.com/rss/', topic: 'Hardware & Gadgets' },
 
   // Economia & Negócios
   { id: 'g1-economia', name: 'G1 Economia', url: 'https://g1.globo.com/rss/g1/economia/', topic: 'Economia' },
