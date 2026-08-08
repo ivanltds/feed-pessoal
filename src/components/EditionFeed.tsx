@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import NewsCard from './NewsCard'
 import DoneScreen from './DoneScreen'
 import SettingsPanel from './SettingsPanel'
+import WeeklyDigestModal from './WeeklyDigestModal'
 
 interface NewsItem {
   id: string
@@ -25,10 +26,11 @@ interface Props {
   userId: string
 }
 
-export default function EditionFeed({ items, date, userId }: Props) {
+export default function EditionFeed({ items, editionId, date, userId }: Props) {
   const router = useRouter()
   const [doneVisible, setDoneVisible] = useState(false)
   const [rebuilding, setRebuilding] = useState(false)
+  const [showWeeklyModal, setShowWeeklyModal] = useState(false)
   const readTimeRef = useRef<Record<string, number>>({})
   const enterTimeRef = useRef<Record<string, number>>({})
 
@@ -103,20 +105,19 @@ export default function EditionFeed({ items, date, userId }: Props) {
     byTopic[item.topic].push(item)
   }
 
-  // Ordena tópicos pelo score médio dos seus itens (maior interesse primeiro)
+  // Ordena tópicos pelo score médio dos seus itens
   const topicOrder = Object.keys(byTopic).sort((a, b) => {
     const avgScore = (items: NewsItem[]) =>
       items.reduce((s, i) => s + (i.score ?? 0), 0) / items.length
     return avgScore(byTopic[b]) - avgScore(byTopic[a])
   })
 
-  // No desktop, o primeiro tópico aparece como sidebar do hero (os 2 primeiros itens)
   const sidebarItems = topicOrder[0] ? byTopic[topicOrder[0]].slice(0, 2) : []
 
   return (
     <div className="min-h-screen" style={{ background: '#F2F1ED' }}>
 
-      {/* ── Header ──────────────────────────────────────────────────────── */}
+      {/* Header */}
       <header
         style={{
           position: 'sticky',
@@ -127,12 +128,21 @@ export default function EditionFeed({ items, date, userId }: Props) {
         }}
       >
         <div className="max-w-5xl mx-auto px-5 sm:px-8 flex items-center justify-between" style={{ height: '52px' }}>
-          <span
-            className="text-base font-bold tracking-tight select-none"
-            style={{ color: '#111', letterSpacing: '-0.02em' }}
-          >
-            feed pessoal
-          </span>
+          <div className="flex items-center gap-3">
+            <span
+              className="text-base font-bold tracking-tight select-none"
+              style={{ color: '#111', letterSpacing: '-0.02em' }}
+            >
+              feed pessoal
+            </span>
+
+            <button
+              onClick={() => setShowWeeklyModal(true)}
+              className="hidden sm:inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded bg-[#EAE8E1] hover:bg-[#E0DED8] text-[#333] transition-colors font-medium"
+            >
+              <span>🗓️ Retrospectiva Semanal</span>
+            </button>
+          </div>
 
           <span
             className="hidden md:block text-xs capitalize"
@@ -155,15 +165,39 @@ export default function EditionFeed({ items, date, userId }: Props) {
           </div>
         </div>
 
-        <div className="md:hidden px-5 pb-2">
-          <span className="text-[11px] capitalize" style={{ color: '#9E9E9E' }}>{date}</span>
+        <div className="md:hidden px-5 pb-2 flex items-center justify-between">
+          <span className="text-[11px] capitalize text-[#9E9E9E]">{date}</span>
+          <button
+            onClick={() => setShowWeeklyModal(true)}
+            className="text-[11px] text-[#333] underline font-medium"
+          >
+            Retrospectiva Semanal
+          </button>
         </div>
       </header>
 
-      {/* ── Feed ─────────────────────────────────────────────────────────── */}
-      <main className="max-w-5xl mx-auto px-5 sm:px-8 py-8 sm:py-12">
+      {/* Main Feed */}
+      <main className="max-w-5xl mx-auto px-5 sm:px-8 py-6 sm:py-8">
 
-        {/* ── Bloco hero ─────────────────────────────────────────────────── */}
+        {/* Banner de Transparência da IA & Economia de Tempo (Oportunidade 2) */}
+        <div className="mb-8 p-3.5 sm:p-4 rounded-xl bg-[#FFF] border border-[#E5E3DC] shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span className="text-xl">⚡</span>
+            <div>
+              <p className="text-xs font-semibold text-[#111]">
+                Curadoria IA Ativa para Hoje
+              </p>
+              <p className="text-xs text-[#666]">
+                Analisamos centenas de artigos RSS e selecionamos os <strong>{items.length} mais relevantes</strong> para o seu perfil.
+              </p>
+            </div>
+          </div>
+          <span className="text-[11px] font-bold px-2.5 py-1 rounded bg-[#F2F1ED] text-[#444] shrink-0">
+            ~45 min economizados
+          </span>
+        </div>
+
+        {/* Bloco hero */}
         {hero && (
           <div className="pb-10 mb-10" style={{ borderBottom: '1px solid #E0DED8' }}>
 
@@ -195,24 +229,20 @@ export default function EditionFeed({ items, date, userId }: Props) {
           </div>
         )}
 
-        {/* ── Seções por tópico ──────────────────────────────────────────── */}
+        {/* Seções por tópico */}
         {topicOrder.map((topic, topicIdx) => {
           const allItems = byTopic[topic]
-          // No desktop, primeiros 2 itens do 1º tópico já estão no sidebar
           const desktopItems = topicIdx === 0 ? allItems.slice(2) : allItems
 
-          // Separa itens com e sem foto para tratamentos distintos
           const withPhoto  = desktopItems.filter(i => i.imageUrl)
           const noPhoto    = desktopItems.filter(i => !i.imageUrl)
 
-          // Calcula colspan para evitar órfãos no grid de 4 colunas
           const COLS = 4
           const orphans = withPhoto.length % COLS
           const getColSpan = (idx: number) => {
             if (orphans === 0) return 1
             const firstOrphanIdx = withPhoto.length - orphans
             if (idx < firstOrphanIdx) return 1
-            // distribui os órfãos para preencher as 4 colunas
             return Math.floor(COLS / orphans)
           }
 
@@ -227,8 +257,6 @@ export default function EditionFeed({ items, date, userId }: Props) {
 
               {/* Desktop */}
               <div className="hidden md:block">
-
-                {/* Grid de tiles — só itens com foto */}
                 {withPhoto.length > 0 && (
                   <div className="grid grid-cols-4 gap-8 mb-0">
                     {withPhoto.map((item, idx) => {
@@ -246,7 +274,6 @@ export default function EditionFeed({ items, date, userId }: Props) {
                   </div>
                 )}
 
-                {/* Lista editorial — itens sem foto */}
                 {noPhoto.length > 0 && (
                   <div style={{ marginTop: withPhoto.length > 0 ? '2rem' : 0 }}>
                     {noPhoto.map((item, idx) => (
@@ -282,11 +309,14 @@ export default function EditionFeed({ items, date, userId }: Props) {
 
         {/* Done screen */}
         {doneVisible && (
-          <div className="max-w-lg mx-auto mt-10 sm:mt-16">
-            <DoneScreen userId={userId} topItem={items[0]} />
+          <div className="max-w-xl mx-auto mt-10 sm:mt-16">
+            <DoneScreen userId={userId} topItem={items[0]} editionId={editionId} />
           </div>
         )}
       </main>
+
+      {/* Modal de Retrospectiva Semanal */}
+      {showWeeklyModal && <WeeklyDigestModal onClose={() => setShowWeeklyModal(false)} />}
     </div>
   )
 }

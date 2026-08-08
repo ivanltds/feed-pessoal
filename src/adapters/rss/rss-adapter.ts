@@ -14,21 +14,47 @@ export interface RssSource {
   topic: Topic
 }
 
+const BLACKLISTED_IMAGE_PATTERNS = [
+  'ebc_logo',
+  'marca_agencia',
+  'agencia_brasil',
+  'agenciabrasil',
+  'default_avatar',
+  'default-thumbnail',
+  'placeholder',
+  'favicon',
+  'logo-share',
+  'site-logo',
+  '1x1.gif',
+  'blank.png',
+  'gravatar.com',
+  'icon-rss',
+]
+
+function isValidNewsImage(url?: string): boolean {
+  if (!url) return false
+  const lowerUrl = url.toLowerCase()
+  return !BLACKLISTED_IMAGE_PATTERNS.some((pattern) => lowerUrl.includes(pattern))
+}
+
 function extractImage(item: Parser.Item & Record<string, unknown>): string | undefined {
   const mediaContent = item['media:content'] as { $?: { url?: string } } | undefined
   const mediaThumbnail = item['media:thumbnail'] as { $?: { url?: string } } | undefined
   const enclosure = item['enclosure'] as { url?: string; type?: string } | undefined
 
-  if (mediaContent?.['$']?.url) return mediaContent['$'].url
-  if (mediaThumbnail?.['$']?.url) return mediaThumbnail['$'].url
-  if (enclosure?.url && enclosure?.type?.startsWith('image/')) return enclosure.url
+  let candidate: string | undefined
 
-  // tenta extrair imagem do content HTML
-  const content = (item.content ?? item['content:encoded'] ?? '') as string
-  const imgMatch = content.match(/<img[^>]+src=["']([^"']+)["']/i)
-  if (imgMatch) return imgMatch[1]
+  if (mediaContent?.['$']?.url) candidate = mediaContent['$'].url
+  else if (mediaThumbnail?.['$']?.url) candidate = mediaThumbnail['$'].url
+  else if (enclosure?.url && enclosure?.type?.startsWith('image/')) candidate = enclosure.url
+  else {
+    // tenta extrair imagem do content HTML
+    const content = (item.content ?? item['content:encoded'] ?? '') as string
+    const imgMatch = content.match(/<img[^>]+src=["']([^"']+)["']/i)
+    if (imgMatch) candidate = imgMatch[1]
+  }
 
-  return undefined
+  return isValidNewsImage(candidate) ? candidate : undefined
 }
 
 export async function fetchFromRss(source: RssSource): Promise<RawNewsItem[]> {
