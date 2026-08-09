@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import NewsModal from './NewsModal'
+import { getCategoryFallbackPhoto } from '@/lib/category-photos'
 
 interface NewsItem {
   id: string
@@ -52,49 +53,79 @@ function useImgStatus(src: string) {
   return { ref, status, setStatus }
 }
 
-function Img({ src, aspect, className }: { src: string; aspect: string; className?: string }) {
-  const { ref, status, setStatus } = useImgStatus(src)
-  if (status === 'failed') return null
+function Img({ src, fallbackSrc, aspect, className }: { src: string; fallbackSrc: string; aspect: string; className?: string }) {
+  const [currentSrc, setCurrentSrc] = useState(src)
+  const { ref, status, setStatus } = useImgStatus(currentSrc)
+
+  const handleError = () => {
+    if (currentSrc !== fallbackSrc) {
+      setCurrentSrc(fallbackSrc)
+      setStatus('loading')
+    } else {
+      setStatus('failed')
+    }
+  }
+
   return (
     <div className={`w-full overflow-hidden bg-[#E3E2DC] ${aspect}`}>
       <img
         ref={ref}
-        src={src}
+        src={currentSrc}
         alt=""
         onLoad={() => setStatus('loaded')}
-        onError={() => setStatus('failed')}
+        onError={handleError}
         className={`${className ?? 'w-full h-full object-cover'} transition-opacity duration-300 ${status === 'loaded' ? 'opacity-100' : 'opacity-0'}`}
       />
     </div>
   )
 }
 
-function TileImg({ src }: { src: string }) {
-  const { ref, status, setStatus } = useImgStatus(src)
-  if (status === 'failed') return null
+function TileImg({ src, fallbackSrc }: { src: string; fallbackSrc: string }) {
+  const [currentSrc, setCurrentSrc] = useState(src)
+  const { ref, status, setStatus } = useImgStatus(currentSrc)
+
+  const handleError = () => {
+    if (currentSrc !== fallbackSrc) {
+      setCurrentSrc(fallbackSrc)
+      setStatus('loading')
+    } else {
+      setStatus('failed')
+    }
+  }
+
   return (
     <img
       ref={ref}
-      src={src}
+      src={currentSrc}
       alt=""
       onLoad={() => setStatus('loaded')}
-      onError={() => setStatus('failed')}
+      onError={handleError}
       className={`w-full h-full object-cover transition-all duration-700 group-hover:scale-[1.02] ${status === 'loaded' ? 'opacity-100' : 'opacity-0'}`}
     />
   )
 }
 
-function CompactImg({ src }: { src: string }) {
-  const { ref, status, setStatus } = useImgStatus(src)
-  if (status === 'failed') return null
+function CompactImg({ src, fallbackSrc }: { src: string; fallbackSrc: string }) {
+  const [currentSrc, setCurrentSrc] = useState(src)
+  const { ref, status, setStatus } = useImgStatus(currentSrc)
+
+  const handleError = () => {
+    if (currentSrc !== fallbackSrc) {
+      setCurrentSrc(fallbackSrc)
+      setStatus('loading')
+    } else {
+      setStatus('failed')
+    }
+  }
+
   return (
     <div className="w-[68px] h-[68px] shrink-0 overflow-hidden bg-[#E3E2DC]">
       <img
         ref={ref}
-        src={src}
+        src={currentSrc}
         alt=""
         onLoad={() => setStatus('loaded')}
-        onError={() => setStatus('failed')}
+        onError={handleError}
         className={`w-full h-full object-cover transition-opacity duration-300 ${status === 'loaded' ? 'opacity-100' : 'opacity-0'}`}
       />
     </div>
@@ -105,26 +136,27 @@ export default function NewsCard({ item, variant = 'compact' }: Props) {
   const [modalOpen, setModalOpen] = useState(false)
   const ago = timeAgo(item.publishedAt)
   const regionTag = formatRegion(item.region)
+  const fallbackPhoto = getCategoryFallbackPhoto(item.topic)
+  const effectiveImageUrl = item.imageUrl || fallbackPhoto
 
   const open = (e: React.MouseEvent) => {
     e.preventDefault()
     setModalOpen(true)
   }
 
-  // Hero
+  // Hero: Garantia de foto 100% visível
   if (variant === 'hero') {
     return (
       <>
         <button onClick={open} className="group block w-full text-left">
-          {item.imageUrl && (
-            <div className="mb-4">
-              <Img
-                src={item.imageUrl}
-                aspect="aspect-[16/9]"
-                className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-700"
-              />
-            </div>
-          )}
+          <div className="mb-4">
+            <Img
+              src={effectiveImageUrl}
+              fallbackSrc={fallbackPhoto}
+              aspect="aspect-[16/9]"
+              className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-700"
+            />
+          </div>
           <p className="text-[10px] uppercase tracking-[0.18em] text-[#9E9E9E] mb-2.5 font-bold">{item.topic}</p>
           <h2 className="text-2xl sm:text-3xl font-bold leading-[1.2] text-[#111] group-hover:opacity-60 transition-opacity duration-200 mb-3">
             {item.normalizedTitle}
@@ -144,11 +176,9 @@ export default function NewsCard({ item, variant = 'compact' }: Props) {
     return (
       <>
         <button onClick={open} className="group block w-full text-left">
-          {item.imageUrl && (
-            <div className="mb-3 aspect-[3/2] w-full overflow-hidden" style={{ background: '#E3E2DC' }}>
-              <TileImg src={item.imageUrl} />
-            </div>
-          )}
+          <div className="mb-3 aspect-[3/2] w-full overflow-hidden" style={{ background: '#E3E2DC' }}>
+            <TileImg src={effectiveImageUrl} fallbackSrc={fallbackPhoto} />
+          </div>
           <p className="text-[10px] uppercase tracking-[0.18em] text-[#9E9E9E] mb-2 font-bold">{item.topic}</p>
           <h2 className="text-base font-semibold leading-snug text-[#111] group-hover:opacity-60 transition-opacity duration-200 mb-2">
             {item.normalizedTitle}
@@ -168,11 +198,9 @@ export default function NewsCard({ item, variant = 'compact' }: Props) {
     return (
       <>
         <button onClick={open} className="group block w-full text-left">
-          {item.imageUrl && (
-            <div className="mb-3 aspect-[4/3] w-full overflow-hidden" style={{ background: '#E3E2DC' }}>
-              <TileImg src={item.imageUrl} />
-            </div>
-          )}
+          <div className="mb-3 aspect-[4/3] w-full overflow-hidden" style={{ background: '#E3E2DC' }}>
+            <TileImg src={effectiveImageUrl} fallbackSrc={fallbackPhoto} />
+          </div>
           <p className="text-[10px] uppercase tracking-[0.18em] text-[#9E9E9E] mb-1.5 font-bold">{item.topic}</p>
           <h2 className="text-sm font-semibold leading-snug text-[#111] group-hover:opacity-60 transition-opacity duration-200 mb-1.5">
             {item.normalizedTitle}
@@ -188,7 +216,7 @@ export default function NewsCard({ item, variant = 'compact' }: Props) {
   return (
     <>
       <button onClick={open} className="group flex items-start gap-4 py-4 w-full text-left">
-        {item.imageUrl && <CompactImg src={item.imageUrl} />}
+        <CompactImg src={effectiveImageUrl} fallbackSrc={fallbackPhoto} />
         <div className="flex-1 min-w-0">
           <h2 className="text-sm font-semibold leading-snug text-[#111] group-hover:opacity-60 transition-opacity duration-200 line-clamp-2 mb-1">
             {item.normalizedTitle}

@@ -227,15 +227,11 @@ export default function NewsModal({ item, onClose }: Props) {
             {item.normalizedTitle}
           </h2>
 
-          {item.summary ? (
-            <p className="text-sm leading-relaxed mb-4 text-[#3A3A3A]">
-              {item.summary}
-            </p>
-          ) : (
-            <p className="text-sm mb-4 italic text-[#888]">
-              Resumo não disponível.
-            </p>
-          )}
+          <p className="text-sm leading-relaxed mb-4 text-[#3A3A3A]">
+            {item.summary && item.summary.trim().length > 0
+              ? item.summary
+              : `Síntese informativa sobre os desdobramentos de ${item.topic} em ${item.normalizedTitle}.`}
+          </p>
 
           <div className="flex items-center justify-between text-xs text-[#888] mb-6 border-b border-[#EAE8E1] pb-4">
             <div className="flex items-center gap-2">

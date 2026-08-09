@@ -6,6 +6,7 @@ import { generateSummaries } from './summary-generator'
 import { classifyNewsItems } from './topic-classifier'
 import { rankItems, type TopicWeights } from './ranker'
 import type { RawNewsItem } from '@/domain/news/types'
+import { getCategoryFallbackPhoto } from '@/lib/category-photos'
 
 export type BuildResult = 'success' | 'already_exists' | 'no_topics' | 'no_items'
 
@@ -21,82 +22,85 @@ export async function buildEditionForUser(userId: string): Promise<BuildResult> 
     return 'already_exists'
   }
 
-  // busca usuário (língua) e pesos de tópico em paralelo
-  const [user, weights] = await Promise.all([
-    prisma.user.findUnique({ where: { id: userId }, select: { language: true } }),
-    prisma.userTopicWeight.findMany({ where: { userId } }),
-  ])
-  const language = user?.language ?? 'pt-BR'
-  const topicWeights: TopicWeights = {}
-  weights.forEach((w) => { topicWeights[w.topic] = w.weight })
+  // busca usuário com preferências e pesos de tópicos
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: {
+      topicWeights: true,
+    },
+  })
 
-  // tópicos selecionados: peso > 1.0 (selecionados partem de 5.0, não-selecionados de 1.0)
-  let activeTopics = Object.entries(topicWeights)
-    .filter(([, w]) => w > 1.0)
-    .map(([topic]) => topic)
-
-  // fallback: se nenhum tópico passou do threshold, usa todos com peso > 0
-  if (activeTopics.length === 0) {
-    console.warn(`[EditionBuilder] Nenhum tópico acima de 1.0 para ${userId}, usando fallback com todos os tópicos`)
-    activeTopics = Object.entries(topicWeights)
-      .filter(([, w]) => w > 0)
-      .map(([topic]) => topic)
-  }
-
-  if (activeTopics.length === 0) {
-    console.warn(`[EditionBuilder] Usuário ${userId} sem tópicos configurados`)
+  if (!user) {
+    console.log(`[EditionBuilder] Usuário ${userId} não encontrado`)
     return 'no_topics'
   }
 
-  // busca notícias de todas as fontes ativas dos tópicos do usuário
-  const sources = getSourcesByTopics(activeTopics)
-  const rawFetched: RawNewsItem[] = (
-    await Promise.all(sources.map(fetchFromRss))
-  ).flat()
+  const selectedTopics = user.topicWeights
+    .filter((w) => w.weight >= 2.0)
+    .map((w) => w.topic)
 
-  if (rawFetched.length === 0) {
-    console.error('[EditionBuilder] Nenhum item encontrado nas fontes')
+  const topics = selectedTopics.length > 0
+    ? selectedTopics
+    : user.topicWeights.map((w) => w.topic)
+
+  if (topics.length === 0) {
+    console.log(`[EditionBuilder] Usuário ${userId} sem tópicos configurados`)
+    return 'no_topics'
+  }
+
+  const language = user.language ?? 'pt-BR'
+
+  // busca fontes dos tópicos do usuário
+  const sources = getSourcesByTopics(topics)
+
+  // coleta notícias de todas as fontes RSS simultaneamente
+  const rawItemsList = await Promise.all(
+    sources.map((s) => fetchFromRss(s))
+  )
+  let allRawItems: RawNewsItem[] = rawItemsList.flat()
+
+  // Filtro Rígido de Recência de 48 Horas
+  const cutoffTime = Date.now() - 48 * 60 * 60 * 1000
+  allRawItems = allRawItems.filter((i) => new Date(i.publishedAt).getTime() >= cutoffTime)
+
+  if (allRawItems.length === 0) {
+    console.log(`[EditionBuilder] Nenhuma notícia coletada para os tópicos de ${userId}`)
     return 'no_items'
   }
 
-  // Filtro Rígido de Recência: Notícias devem ter no máximo 48 horas (descarta itens velhos de 81 dias)
-  const nowMs = Date.now()
-  const MAX_AGE_MS = 48 * 60 * 60 * 1000 // 48 horas
-  let freshFetched = rawFetched.filter((item) => {
-    const pubDate = new Date(item.publishedAt).getTime()
-    const age = nowMs - pubDate
-    return !isNaN(age) && age >= 0 && age <= MAX_AGE_MS
-  })
+  // Agente de IA para Validação e Classificação de Tópicos
+  const classifiedItems = await classifyNewsItems(allRawItems, topics)
 
-  // Fallback: se poucas notícias passaram no filtro de 48h, relaxa para 7 dias no máximo
-  if (freshFetched.length < 5) {
-    const RELAXED_AGE_MS = 7 * 24 * 60 * 60 * 1000
-    freshFetched = rawFetched.filter((item) => {
-      const pubDate = new Date(item.publishedAt).getTime()
-      const age = nowMs - pubDate
-      return !isNaN(age) && age >= 0 && age <= RELAXED_AGE_MS
-    })
-  }
-
-  // Classificação Semântica por IA: Garante que matérias como Putin vá para Geopolítica e não América Latina!
-  const rawItems = await classifyNewsItems(freshFetched, activeTopics, language)
-
-  if (rawItems.length === 0) {
-    console.error('[EditionBuilder] Nenhum item atendeu a classificação de tópicos')
+  if (classifiedItems.length === 0) {
+    console.log(`[EditionBuilder] Nenhuma notícia válida após classificação por IA para ${userId}`)
     return 'no_items'
   }
 
-  // rankeia os itens
-  let rankedItems = rankItems(rawItems, topicWeights)
+  // constrói mapa de pesos do usuário
+  const weightsMap: TopicWeights = {}
+  for (const w of user.topicWeights) {
+    weightsMap[w.topic] = w.weight
+  }
 
-  // Cota Mínima Garantida: Assegura pelo menos 2 matérias de fontes não-ocidentais/Sul Global na edição
-  const nonWesternSelected = rankedItems.filter((it) => it.region && it.region !== 'OCIDENTAL')
-  if (nonWesternSelected.length < 2) {
-    const nonWesternPool = rawItems.filter(
-      (it) => it.region && it.region !== 'OCIDENTAL' && !rankedItems.some((r) => r.url === it.url)
+  // ranqueia notícias usando algoritmo determinístico
+  let rankedItems = rankItems(classifiedItems, weightsMap)
+
+  // Cota Mínima Garantida de Pluralismo Geopolítico (pelo menos 2 matérias de fontes não-ocidentais/Sul Global)
+  const nonWesternQuota = 2
+  const currentNonWesternCount = rankedItems.filter(
+    (i) => i.region && ['ORIENTE_MEDIO', 'ASIA_PACIFICO', 'SUL_GLOBAL'].includes(i.region)
+  ).length
+
+  if (currentNonWesternCount < nonWesternQuota) {
+    const missing = nonWesternQuota - currentNonWesternCount
+    const poolNonWestern = rankItems(
+      classifiedItems.filter(
+        (i) => i.region && ['ORIENTE_MEDIO', 'ASIA_PACIFICO', 'SUL_GLOBAL'].includes(i.region) &&
+               !rankedItems.some((r) => r.url === i.url)
+      ),
+      weightsMap
     )
-    const needed = 2 - nonWesternSelected.length
-    const toInject = nonWesternPool.slice(0, needed).map((it) => ({ ...it, score: 3.8, normalizedTitle: it.title }))
+    const toInject = poolNonWestern.slice(0, missing)
     if (toInject.length > 0) {
       rankedItems = [...rankedItems.slice(0, Math.max(1, rankedItems.length - toInject.length)), ...toInject]
     }
@@ -104,7 +108,7 @@ export async function buildEditionForUser(userId: string): Promise<BuildResult> 
 
   // normaliza títulos e gera resumos em paralelo
   const originalTitles = rankedItems.map((i) => i.title)
-  const summaryInputs = rankedItems.map((i) => ({ title: i.title, snippet: i.summary }))
+  const summaryInputs = rankedItems.map((i) => ({ title: i.title, snippet: i.summary, topic: i.topic }))
   const [normalizedTitles, summaries] = await Promise.all([
     normalizeTitles(originalTitles, language),
     generateSummaries(summaryInputs, language),
@@ -124,8 +128,8 @@ export async function buildEditionForUser(userId: string): Promise<BuildResult> 
           sourceName: item.sourceName,
           originalTitle: item.title,
           normalizedTitle: normalizedTitles[idx],
-          summary: summaries[idx] || null,
-          imageUrl: item.imageUrl,
+          summary: summaries[idx] || `Análise sobre os desdobramentos de ${item.topic} em ${normalizedTitles[idx]}.`,
+          imageUrl: item.imageUrl || getCategoryFallbackPhoto(item.topic),
           url: item.url,
           publishedAt: item.publishedAt,
           score: item.score,
