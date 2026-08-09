@@ -207,7 +207,7 @@ export default function NewsModal({ item, onClose }: Props) {
             alt=""
             className="w-full h-full object-cover"
             onError={() => {
-              setModalImageUrl(getCategoryFallbackPhoto(item.topic))
+              setModalImageUrl(getCategoryFallbackPhoto(item.topic, item.id))
               setIsAiSelected(true)
             }}
           />
@@ -380,22 +380,22 @@ export default function NewsModal({ item, onClose }: Props) {
             </div>
           )}
 
-          {/* Perspectivas 360° */}
+          {/* Perspectivas 360° em Grid de Cards */}
           <div className="mb-6 p-4 border border-[#E0DED8] bg-[#FFF]">
             <div className="flex items-center justify-between mb-3 pb-2 border-b border-[#F0EFEA]">
               <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#555]">
-                PERSPECTIVAS 360°
+                PERSPECTIVAS 360° (ANÁLISE MULTIDIMENSIONAL)
               </p>
-              <span className="text-[10px] text-[#999] uppercase tracking-wider">Leitura em 1 clique</span>
+              <span className="text-[10px] text-[#999] uppercase tracking-wider font-bold">4 Dimensões</span>
             </div>
 
             {loadingP ? (
-              <div className="space-y-2">
-                {[1, 2, 3].map((i) => (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {[1, 2, 3, 4].map((i) => (
                   <div
                     key={i}
                     style={{
-                      height: '38px',
+                      height: '90px',
                       background: '#F0EFEA',
                       animation: 'pulse 1.4s ease infinite',
                       animationDelay: `${i * 0.15}s`,
@@ -404,54 +404,34 @@ export default function NewsModal({ item, onClose }: Props) {
                 ))}
               </div>
             ) : perspectives.length > 0 ? (
-              <div className="space-y-2">
-                {/* Selector de Abas Monocromáticas */}
-                <div className="flex flex-wrap gap-1 p-1 mb-3 bg-[#F2F1ED] border border-[#E0DED8]">
-                  {perspectives.map((p) => {
-                    const isActive = activeTab === p.type
-                    return (
-                      <button
-                        key={p.type}
-                        onClick={() => setActiveTab(p.type)}
-                        className="flex-1 py-1.5 px-2 text-[10px] font-semibold tracking-tight transition-all text-center uppercase whitespace-nowrap"
-                        style={{
-                          background: isActive ? '#111' : 'transparent',
-                          color: isActive ? '#FFF' : '#5C5C5C',
-                        }}
-                      >
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                {perspectives.map((p) => (
+                  <div key={p.type} className="p-3.5 bg-[#F8F7F4] border border-[#E0DED8] flex flex-col justify-between">
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#555] block mb-1 border-b border-[#EAE8E1] pb-1">
                         {p.badge}
-                      </button>
-                    )
-                  })}
-                </div>
-
-                {/* Conteúdo da Aba Ativa */}
-                {perspectives
-                  .filter((p) => p.type === activeTab)
-                  .map((p) => (
-                    <div
-                      key={p.type}
-                      className="p-3.5 border border-[#E0DED8] bg-[#F8F7F4]"
-                    >
-                      <h4 className="text-xs font-bold uppercase tracking-wide text-[#111] mb-1">{p.title}</h4>
-                      <p className="text-xs text-[#444] leading-relaxed mb-3">{p.summary}</p>
-                      
-                      <button
-                        onClick={() => openQuestion({
-                          id: `p-${item.id}-${p.type}`,
-                          text: `Aprofundar na perspectiva '${p.title}' sobre '${item.normalizedTitle}'`,
-                          topic: item.topic,
-                          newsItemId: item.id
-                        })}
-                        className="text-[10px] uppercase tracking-wider font-semibold text-[#111] hover:underline flex items-center gap-1"
-                      >
-                        <span>Aprofundar via chat</span>
-                        <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </button>
+                      </span>
+                      <h5 className="font-bold text-[#111] mb-1.5 leading-snug">{p.title}</h5>
+                      <p className="text-[#444] leading-relaxed mb-3">{p.summary}</p>
                     </div>
-                  ))}
+
+                    <button
+                      type="button"
+                      onClick={() => openQuestion({
+                        id: `p-${item.id}-${p.type}`,
+                        text: `Aprofundar na perspectiva '${p.title}' sobre '${item.normalizedTitle}'`,
+                        topic: item.topic,
+                        newsItemId: item.id
+                      })}
+                      className="text-[10px] uppercase tracking-wider font-semibold text-[#111] hover:underline flex items-center gap-1 border-t border-[#EAE8E1] pt-2.5 mt-auto"
+                    >
+                      <span>Aprofundar via chat</span>
+                      <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
               </div>
             ) : (
               <p className="text-xs text-[#888]">Análise indisponível para este artigo.</p>

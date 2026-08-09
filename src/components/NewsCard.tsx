@@ -136,7 +136,7 @@ export default function NewsCard({ item, variant = 'compact' }: Props) {
   const [modalOpen, setModalOpen] = useState(false)
   const ago = timeAgo(item.publishedAt)
   const regionTag = formatRegion(item.region)
-  const fallbackPhoto = getCategoryFallbackPhoto(item.topic)
+  const fallbackPhoto = getCategoryFallbackPhoto(item.topic, item.id)
   const effectiveImageUrl = item.imageUrl || fallbackPhoto
 
   const open = (e: React.MouseEvent) => {

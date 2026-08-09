@@ -24,14 +24,14 @@ export async function generatePerspectives(item: {
   const langName = SUPPORTED_LANGUAGES[language] ?? language
 
   const context = item.summary
-    ? `Título: ${item.normalizedTitle}\nResumo: ${item.summary}`
-    : `Título: ${item.normalizedTitle}`
+    ? `Título da Notícia: ${item.normalizedTitle}\nResumo: ${item.summary}`
+    : `Título da Notícia: ${item.normalizedTitle}`
 
   try {
     const response = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
-      max_tokens: 600,
-      temperature: 0.5,
+      max_tokens: 800,
+      temperature: 0.4,
       response_format: { type: 'json_object' },
       messages: [
         {
@@ -39,32 +39,36 @@ export async function generatePerspectives(item: {
           content: `Você é um analista sênior de inteligência de notícias e geopolítica global.
 Analise a notícia fornecida e gere EXATAMENTE 4 perspectivas analíticas sem emojis em ${langName}.
 
-Retorne um JSON válido com o seguinte formato exato:
+REGRAS RÍGIDAS DE ANÁLISE:
+1. Escreva a explicação ("summary") de cada perspectiva em 2 a 3 frases analíticas ricas e detalhadas.
+2. Garanta que todos os títulos e resumos estejam 100% traduzidos para ${langName}.
+
+Retorne um JSON válido com o formato exato:
 {
   "perspectives": [
     {
       "type": "impact",
       "badge": "Impacto Prático",
-      "title": "Título curto sobre o impacto (máx 60 caracteres)",
-      "summary": "Explicação concisa e clara em 1-2 frases sobre quem é afetado e como."
+      "title": "Título direto sobre os afetados",
+      "summary": "Análise clara em 2-3 frases sobre quem é afetado diretamente e quais os efeitos operacionais."
     },
     {
       "type": "counterpoint",
       "badge": "Contraponto & Riscos",
-      "title": "Título curto sobre o risco ou crítica (máx 60 caracteres)",
-      "summary": "Explicação concisa e clara em 1-2 frases sobre dilemas, críticas ou incertezas."
+      "title": "Título sobre dilemas ou críticas",
+      "summary": "Análise clara em 2-3 frases sobre as controvérsias, dilemas e incertezas envolvidas."
     },
     {
       "type": "global_south",
       "badge": "Sul Global & Emergentes",
-      "title": "Visão da Ásia, África e América Latina (máx 60 caracteres)",
-      "summary": "Explicação concisa de como o fato afeta países emergentes ou é percebido fora do eixo ocidental."
+      "title": "Visão de Países Emergentes",
+      "summary": "Análise fática de como o acontecimento afeta a Ásia, África e América Latina fora do eixo ocidental."
     },
     {
       "type": "outlook",
       "badge": "Próximos Passos",
-      "title": "Título curto sobre o que esperar (máx 60 caracteres)",
-      "summary": "Explicação concisa e clara em 1-2 frases sobre os desdobramentos futuros."
+      "title": "Título sobre desdobramentos futuros",
+      "summary": "Análise clara em 2-3 frases sobre as expectativas de curto e médio prazo."
     }
   ]
 }`
@@ -88,26 +92,26 @@ Retorne um JSON válido com o seguinte formato exato:
         {
           type: 'impact',
           badge: 'Impacto Prático',
-          title: 'Análise de impacto em andamento',
-          summary: 'Esta notícia impacta diretamente as dinâmicas de ' + item.topic + '.'
+          title: 'Impacto direto no setor',
+          summary: `Desdobramentos operacionais e estratégicos significativos sobre o setor de ${item.topic}, afetando empresas e profissionais envolvidos.`
         },
         {
           type: 'counterpoint',
           badge: 'Contraponto & Riscos',
-          title: 'Pontos de atenção',
-          summary: 'Especialistas acompanham os riscos operacionais e regulatórios envolvidos.'
+          title: 'Dilemas e pontos de crítica',
+          summary: 'Especialistas alertam para riscos de implementação, custos regulatórios e questionamentos de transparência no processo.'
         },
         {
           type: 'global_south',
           badge: 'Sul Global & Emergentes',
-          title: 'Perspectiva dos emergentes',
-          summary: 'Análise sobre os reflexos geopolíticos e econômicos na Ásia, África e América Latina.'
+          title: 'Repercussão em países emergentes',
+          summary: 'Análise de como a medida altera fluxos de investimento e arranjos geopolíticos na América Latina, Ásia e África.'
         },
         {
           type: 'outlook',
           badge: 'Próximos Passos',
-          title: 'Desdobramentos futuros',
-          summary: 'Novas atualizações são esperadas nos próximos ciclos de notícias.'
+          title: 'Tendências e projeções futuras',
+          summary: 'Acompanhamento dos novos marcos de deliberação e dos relatórios oficiais previstos para as próximas semanas.'
         }
       ]
     }
