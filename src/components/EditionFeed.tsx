@@ -328,6 +328,16 @@ export default function EditionFeed({ items, editionId, date, userId }: Props) {
         )}
       </main>
 
+      {/* Rodapé Institucional */}
+      <footer className="mt-16 border-t border-[#E0DED8] bg-[#FFF] py-8 text-center text-xs text-[#777]">
+        <div className="max-w-5xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p>© Feed Pessoal — Curadoria imparcial e descentralização geopolítica.</p>
+          <a href="/about" className="font-bold text-[#111] underline hover:text-[#555]">
+            Transparência de IA & Prompts dos Agentes
+          </a>
+        </div>
+      </footer>
+
       {/* Modal de Retrospectiva Semanal */}
       {showWeeklyModal && <WeeklyDigestModal onClose={() => setShowWeeklyModal(false)} />}
     </div>

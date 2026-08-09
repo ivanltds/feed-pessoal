@@ -101,9 +101,12 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="max-w-5xl mx-auto w-full px-6 sm:px-10 py-8" style={{ borderTop: '1px solid #E0DED8' }}>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
           <span className="text-xs" style={{ color: '#9E9E9E' }}>© {new Date().getFullYear()} feed pessoal</span>
-          <Link href="/privacy" className="text-xs" style={{ color: '#9E9E9E' }}>Privacidade</Link>
+          <div className="flex items-center gap-4">
+            <Link href="/about" className="text-xs font-semibold text-[#111] underline">Transparência de IA & Prompts</Link>
+            <Link href="/privacy" className="text-xs" style={{ color: '#9E9E9E' }}>Privacidade</Link>
+          </div>
         </div>
       </footer>
     </div>
