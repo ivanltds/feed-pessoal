@@ -1,5 +1,6 @@
 import { openai } from '@/lib/openai'
 import { SUPPORTED_LANGUAGES } from './summary-generator'
+import { isProbablyEnglish, translateSingleTitle } from './title-normalizer'
 
 export interface NewsPerspective {
   type: 'impact' | 'counterpoint' | 'outlook' | 'global_south'
@@ -13,6 +14,36 @@ export interface PerspectivesResponse {
   perspectives: NewsPerspective[]
 }
 
+function buildFactualFallbackPerspectives(title: string, topic: string): NewsPerspective[] {
+  const cleanTitle = title.replace(/^["']|["']$/g, '')
+  return [
+    {
+      type: 'impact',
+      badge: 'Impacto Prático',
+      title: 'Efeitos Diretos nas Comunidades',
+      summary: `Os acontecimentos em torno de "${cleanTitle}" geram impacto imediato na rotina das populações locais, exigindo respostas rápidas das autoridades e mobilização de recursos de proteção e suporte.`
+    },
+    {
+      type: 'counterpoint',
+      badge: 'Contraponto & Riscos',
+      title: 'Dilemas e Questionamentos Críticos',
+      summary: `Especialistas e grupos da sociedade civil cobram maior transparência nas investigações sobre "${cleanTitle}", ressaltando falhas de prevenção e lacunas em protocolos de segurança.`
+    },
+    {
+      type: 'global_south',
+      badge: 'Sul Global & Emergentes',
+      title: 'Visão de Países Emergentes',
+      summary: `O episódio mobiliza atenção na Ásia, África e América Latina, reacendendo debates sobre políticas públicas, segurança comunitária e estabilidade social em ${topic}.`
+    },
+    {
+      type: 'outlook',
+      badge: 'Próximos Passos',
+      title: 'Desdobramentos e Ações Oficiais',
+      summary: `Autoridades responsáveis devem emitir novos relatórios oficiais e encaminhar deliberações administrativas e regulatórias no curto e médio prazo sobre os desdobramentos de "${cleanTitle}".`
+    }
+  ]
+}
+
 export async function generatePerspectives(item: {
   id: string
   normalizedTitle: string
@@ -23,15 +54,20 @@ export async function generatePerspectives(item: {
   const language = item.language ?? 'pt-BR'
   const langName = SUPPORTED_LANGUAGES[language] ?? language
 
+  let cleanTitle = item.normalizedTitle
+  if (isProbablyEnglish(cleanTitle)) {
+    cleanTitle = await translateSingleTitle(cleanTitle, language)
+  }
+
   const context = item.summary
-    ? `Título da Notícia: ${item.normalizedTitle}\nResumo: ${item.summary}`
-    : `Título da Notícia: ${item.normalizedTitle}`
+    ? `Título da Notícia (em Português): ${cleanTitle}\nResumo Informativo: ${item.summary}`
+    : `Título da Notícia (em Português): ${cleanTitle}`
 
   try {
     const response = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
-      max_tokens: 800,
-      temperature: 0.4,
+      max_tokens: 900,
+      temperature: 0.3,
       response_format: { type: 'json_object' },
       messages: [
         {
@@ -39,9 +75,10 @@ export async function generatePerspectives(item: {
           content: `Você é um analista sênior de inteligência de notícias e geopolítica global.
 Analise a notícia fornecida e gere EXATAMENTE 4 perspectivas analíticas sem emojis em ${langName}.
 
-REGRAS RÍGIDAS DE ANÁLISE:
-1. Escreva a explicação ("summary") de cada perspectiva em 2 a 3 frases analíticas ricas e detalhadas.
-2. Garanta que todos os títulos e resumos estejam 100% traduzidos para ${langName}.
+REGRAS RÍGIDAS DE ANÁLISE INFORMATIVA:
+1. NUNCA use jargões corporativos genéricos ("afetando empresas e profissionais envolvidos no setor").
+2. Escreva análises específicas em 2 a 3 frases focadas no tema real da notícia (ex: segurança pública, geopolítica, tecnologia, economia).
+3. Garanta que todos os títulos e resumos estejam 100% traduzidos para ${langName}.
 
 Retorne um JSON válido com o formato exato:
 {
@@ -49,26 +86,26 @@ Retorne um JSON válido com o formato exato:
     {
       "type": "impact",
       "badge": "Impacto Prático",
-      "title": "Título direto sobre os afetados",
-      "summary": "Análise clara em 2-3 frases sobre quem é afetado diretamente e quais os efeitos operacionais."
+      "title": "Título sobre quem é afetado",
+      "summary": "Análise clara em 2-3 frases sobre o impacto real nas partes envolvidas."
     },
     {
       "type": "counterpoint",
       "badge": "Contraponto & Riscos",
-      "title": "Título sobre dilemas ou críticas",
-      "summary": "Análise clara em 2-3 frases sobre as controvérsias, dilemas e incertezas envolvidas."
+      "title": "Título sobre críticas e controvérsias",
+      "summary": "Análise clara em 2-3 frases sobre questionamentos e dilemas do episódio."
     },
     {
       "type": "global_south",
       "badge": "Sul Global & Emergentes",
-      "title": "Visão de Países Emergentes",
-      "summary": "Análise fática de como o acontecimento afeta a Ásia, África e América Latina fora do eixo ocidental."
+      "title": "Repercussão em Países Emergentes",
+      "summary": "Análise factual de como o fato afeta a Ásia, África e América Latina fora do eixo ocidental."
     },
     {
       "type": "outlook",
       "badge": "Próximos Passos",
       "title": "Título sobre desdobramentos futuros",
-      "summary": "Análise clara em 2-3 frases sobre as expectativas de curto e médio prazo."
+      "summary": "Análise clara em 2-3 frases sobre o que esperar das autoridades e investigações."
     }
   ]
 }`
@@ -80,40 +117,18 @@ Retorne um JSON válido com o formato exato:
     const content = response.choices[0]?.message?.content ?? '{}'
     const parsed = JSON.parse(content) as { perspectives?: NewsPerspective[] }
 
-    return {
-      newsItemId: item.id,
-      perspectives: parsed.perspectives ?? []
+    if (parsed.perspectives && parsed.perspectives.length === 4) {
+      return {
+        newsItemId: item.id,
+        perspectives: parsed.perspectives
+      }
     }
   } catch (error) {
     console.error('[PerspectiveGenerator] Erro ao gerar perspectivas:', error)
-    return {
-      newsItemId: item.id,
-      perspectives: [
-        {
-          type: 'impact',
-          badge: 'Impacto Prático',
-          title: 'Impacto direto no setor',
-          summary: `Desdobramentos operacionais e estratégicos significativos sobre o setor de ${item.topic}, afetando empresas e profissionais envolvidos.`
-        },
-        {
-          type: 'counterpoint',
-          badge: 'Contraponto & Riscos',
-          title: 'Dilemas e pontos de crítica',
-          summary: 'Especialistas alertam para riscos de implementação, custos regulatórios e questionamentos de transparência no processo.'
-        },
-        {
-          type: 'global_south',
-          badge: 'Sul Global & Emergentes',
-          title: 'Repercussão em países emergentes',
-          summary: 'Análise de como a medida altera fluxos de investimento e arranjos geopolíticos na América Latina, Ásia e África.'
-        },
-        {
-          type: 'outlook',
-          badge: 'Próximos Passos',
-          title: 'Tendências e projeções futuras',
-          summary: 'Acompanhamento dos novos marcos de deliberação e dos relatórios oficiais previstos para as próximas semanas.'
-        }
-      ]
-    }
+  }
+
+  return {
+    newsItemId: item.id,
+    perspectives: buildFactualFallbackPerspectives(cleanTitle, item.topic)
   }
 }

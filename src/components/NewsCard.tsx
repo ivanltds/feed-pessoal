@@ -31,10 +31,19 @@ function timeAgo(date: Date): string {
   return `${Math.floor(hours / 24)}d`
 }
 
-function formatRegion(region?: string): string {
-  if (region === 'ORIENTE_MEDIO') return 'ORIENTE MÉDIO'
-  if (region === 'ASIA_PACIFICO') return 'ÁSIA-PACÍFICO'
-  if (region === 'SUL_GLOBAL') return 'SUL GLOBAL'
+import { ACTIVE_SOURCES } from '@/adapters/sources'
+
+function formatRegion(region?: string, sourceName?: string): string {
+  let r = region
+  if (!r || r === 'OCIDENTAL') {
+    if (sourceName) {
+      const match = ACTIVE_SOURCES.find((s) => s.name.toLowerCase() === sourceName.toLowerCase() || sourceName.toLowerCase().includes(s.name.toLowerCase()))
+      if (match) r = match.region
+    }
+  }
+  if (r === 'ORIENTE_MEDIO') return 'ORIENTE MÉDIO'
+  if (r === 'ASIA_PACIFICO') return 'ÁSIA-PACÍFICO'
+  if (r === 'SUL_GLOBAL') return 'SUL GLOBAL'
   return 'OCIDENTAL'
 }
 
@@ -135,7 +144,7 @@ function CompactImg({ src, fallbackSrc }: { src: string; fallbackSrc: string }) 
 export default function NewsCard({ item, variant = 'compact' }: Props) {
   const [modalOpen, setModalOpen] = useState(false)
   const ago = timeAgo(item.publishedAt)
-  const regionTag = formatRegion(item.region)
+  const regionTag = formatRegion(item.region, item.sourceName)
   const fallbackPhoto = getCategoryFallbackPhoto(item.topic, item.id)
   const effectiveImageUrl = item.imageUrl || fallbackPhoto
 

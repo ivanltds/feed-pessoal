@@ -6,6 +6,7 @@ import type { NarrativeComparisonResult, NarrativeActor } from '@/services/narra
 import { useDeepDive } from '@/hooks/useDeepDive'
 
 import { getCategoryFallbackPhoto } from '@/lib/category-photos'
+import { ACTIVE_SOURCES } from '@/adapters/sources'
 
 interface NewsItem {
   id: string
@@ -34,10 +35,17 @@ function timeAgo(date: Date): string {
   return `${Math.floor(hours / 24)}d atrás`
 }
 
-function formatRegion(region?: string): string {
-  if (region === 'ORIENTE_MEDIO') return 'ORIENTE MÉDIO'
-  if (region === 'ASIA_PACIFICO') return 'ÁSIA-PACÍFICO'
-  if (region === 'SUL_GLOBAL') return 'SUL GLOBAL'
+function formatRegion(region?: string, sourceName?: string): string {
+  let r = region
+  if (!r || r === 'OCIDENTAL') {
+    if (sourceName) {
+      const match = ACTIVE_SOURCES.find((s) => s.name.toLowerCase() === sourceName.toLowerCase() || sourceName.toLowerCase().includes(s.name.toLowerCase()))
+      if (match) r = match.region
+    }
+  }
+  if (r === 'ORIENTE_MEDIO') return 'ORIENTE MÉDIO'
+  if (r === 'ASIA_PACIFICO') return 'ÁSIA-PACÍFICO'
+  if (r === 'SUL_GLOBAL') return 'SUL GLOBAL'
   return 'OCIDENTAL'
 }
 
@@ -185,7 +193,7 @@ export default function NewsModal({ item, onClose }: Props) {
             </span>
             <span className="text-[10px] text-[#BBB]">·</span>
             <span className="text-[10px] font-bold uppercase tracking-wider text-[#111]">
-              {formatRegion(item.region)}
+              {formatRegion(item.region, item.sourceName)}
             </span>
           </div>
           <button
