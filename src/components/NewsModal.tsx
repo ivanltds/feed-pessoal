@@ -5,6 +5,8 @@ import type { NewsPerspective } from '@/services/perspective-generator'
 import type { NarrativeComparisonResult, NarrativeActor } from '@/services/narrative-comparator'
 import { useDeepDive } from '@/hooks/useDeepDive'
 
+import { getCategoryFallbackPhoto } from '@/services/image-enricher'
+
 interface NewsItem {
   id: string
   topic: string
@@ -205,7 +207,7 @@ export default function NewsModal({ item, onClose }: Props) {
             alt=""
             className="w-full h-full object-cover"
             onError={() => {
-              setModalImageUrl(`https://picsum.photos/seed/${encodeURIComponent(item.id)}/1200/675`)
+              setModalImageUrl(getCategoryFallbackPhoto(item.topic))
               setIsAiSelected(true)
             }}
           />

@@ -9,7 +9,6 @@ const AGENT_PROMPTS = [
   {
     id: 'topic-classifier',
     name: '01. Agente Classificador Semântico de Tópicos',
-    file: 'app/src/services/topic-classifier.ts',
     model: 'GPT-4o-Mini (Temperature: 0.2)',
     purpose: 'Classifica o tema real da notícia impedindo atribuições erradas (ex: matérias de Putin em América Latina ou filmes em Computação Quântica).',
     systemPrompt: `Você é um editor sênior de jornalismo encarregado de classificar notícias com 100% de precisão factual.
@@ -24,7 +23,6 @@ REGRAS RÍGIDAS DE CLASSIFICAÇÃO:
   {
     id: 'summary-generator',
     name: '02. Agente Sintetizador & Tradutor Plural',
-    file: 'app/src/services/summary-generator.ts',
     model: 'GPT-4o-Mini (Temperature: 0.3)',
     purpose: 'Traduz automaticamente notícias de fontes estrangeiras (Al Jazeera, SCMP, Nikkei, etc.) e resume os fatos sem sensacionalismo ou viés regional.',
     systemPrompt: `You are an impartial, global news editor focused on factual neutrality and multi-perspective clarity.
@@ -38,7 +36,6 @@ For each item:
   {
     id: 'title-normalizer',
     name: '03. Agente Normalizador & Anti-Clickbait de Títulos',
-    file: 'app/src/services/title-normalizer.ts',
     model: 'GPT-4o-Mini (Temperature: 0.3)',
     purpose: 'Remove gatilhos emocionais, caixa alta excessiva e termos apelativos dos títulos originais dos portais.',
     systemPrompt: `You are a neutral, factual news editor.
@@ -53,7 +50,6 @@ You will receive a numbered list of news titles. For each one:
   {
     id: 'narrative-comparator',
     name: '04. Agente Comparador Universal de Partes Interessadas',
-    file: 'app/src/services/narrative-comparator.ts',
     model: 'GPT-4o-Mini (Temperature: 0.4)',
     purpose: 'Mapeia de 2 a 5 partes interessadas (atores geopolíticos, torcidas, órgãos, empresas ou comunidades) e sintetiza suas visões divergentes sobre qualquer fato.',
     systemPrompt: `Você é um analista universal de inteligência de notícias, antropologia social e geopolítica.
@@ -67,7 +63,6 @@ EXEMPLOS DE ATRIBUIÇÃO DE ATORES CONTEXTUAIS:
   {
     id: 'perspective-generator',
     name: '05. Agente de Perspectivas 360°',
-    file: 'app/src/services/perspective-generator.ts',
     model: 'GPT-4o-Mini (Temperature: 0.5)',
     purpose: 'Gera as 4 abas de leitura rápida no modal: Impacto Prático, Contraponto & Riscos, Sul Global & Emergentes, Próximos Passos.',
     systemPrompt: `Você é um analista sênior de inteligência de notícias e geopolítica global.
@@ -80,7 +75,6 @@ Analise a notícia fornecida e gere EXATAMENTE 4 perspectivas analíticas sem em
   {
     id: 'image-enricher',
     name: '06. Agente Avaliador de Relevância Visual de Imagens',
-    file: 'app/src/services/image-enricher.ts',
     model: 'GPT-4o-Mini (Temperature: 0.3)',
     purpose: 'Extrai o conceito fotográfico central da notícia e assegura que matérias do topo recebam fotos com alta relevância fática.',
     systemPrompt: `Você é um curador de fotografia jornalística.
@@ -89,7 +83,6 @@ Dado o título e o assunto da notícia, defina 1 a 2 palavras em inglês simples
   {
     id: 'weekly-digest',
     name: '07. Agente de Briefing Semanal Executivo',
-    file: 'app/src/services/weekly-digest-generator.ts',
     model: 'GPT-4o-Mini (Temperature: 0.4)',
     purpose: 'Sintetiza os acontecimentos dos últimos 7 dias em uma linha do tempo fática e destaca o Radar de Perspectivas Globais.',
     systemPrompt: `Você é um analista executivo de inteligência. Sintetize os principais fatos da semana em uma linha do tempo cronológica objetiva sem viés.`
@@ -141,7 +134,7 @@ export default function AboutPage() {
         {/* Fórmula Determinística de Ranking */}
         <section className="p-6 bg-[#FFF] border border-[#E0DED8]">
           <h2 className="text-sm font-bold uppercase tracking-[0.18em] text-[#111] mb-3 border-b border-[#EAE8E1] pb-2">
-            08. FÓRMULA MATEMÁTICA DETERMINÍSTICA DE RANKING (RANKER.TS)
+            08. FÓRMULA MATEMÁTICA DETERMINÍSTICA DE RANKING
           </h2>
           <p className="text-xs text-[#555] mb-4 leading-relaxed">
             A ordenação das notícias não é uma "caixa preta". Cada notícia recebe um Score matemático calculado deterministicamente por:
@@ -177,7 +170,6 @@ export default function AboutPage() {
                   </span>
                 </div>
 
-                <p className="text-xs text-[#555] mb-1 font-mono">Arquivo: {agent.file}</p>
                 <p className="text-xs text-[#444] mb-4 leading-relaxed">{agent.purpose}</p>
 
                 <div className="bg-[#F8F7F4] border border-[#E0DED8] p-4 font-mono text-xs text-[#222] overflow-x-auto whitespace-pre-wrap leading-relaxed">
