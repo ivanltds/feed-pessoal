@@ -5,7 +5,7 @@ import type { NewsPerspective } from '@/services/perspective-generator'
 import type { NarrativeComparisonResult, NarrativeActor } from '@/services/narrative-comparator'
 import { useDeepDive } from '@/hooks/useDeepDive'
 
-import { getCategoryFallbackPhoto } from '@/services/image-enricher'
+import { getCategoryFallbackPhoto } from '@/lib/category-photos'
 
 interface NewsItem {
   id: string
