@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { fetchFromRss } from '@/adapters/rss/rss-adapter'
 import { getSourcesByTopics } from '@/adapters/sources'
-import { normalizeTitles } from './title-normalizer'
+import { normalizeTitles, isProbablyEnglish, translateSingleTitle } from './title-normalizer'
 import { generateSummaries } from './summary-generator'
 import { classifyNewsItems } from './topic-classifier'
 import { rankItems, type TopicWeights } from './ranker'
@@ -128,8 +128,8 @@ export async function buildEditionForUser(userId: string): Promise<BuildResult> 
           sourceName: item.sourceName,
           originalTitle: item.title,
           normalizedTitle: normalizedTitles[idx],
-          summary: summaries[idx] || `Análise sobre os desdobramentos de ${item.topic} em ${normalizedTitles[idx]}.`,
-          imageUrl: item.imageUrl || getCategoryFallbackPhoto(item.topic),
+          summary: summaries[idx] || `Desenvolvimentos em ${item.topic} registram desdobramentos operacionais para ${normalizedTitles[idx]}.`,
+          imageUrl: item.imageUrl || getCategoryFallbackPhoto(item.topic, item.url),
           url: item.url,
           publishedAt: item.publishedAt,
           score: item.score,
@@ -145,8 +145,29 @@ export async function buildEditionForUser(userId: string): Promise<BuildResult> 
 
 export async function getTodaysEdition(userId: string) {
   const today = new Date().toISOString().split('T')[0]
-  return prisma.edition.findUnique({
+  const edition = await prisma.edition.findUnique({
     where: { userId_date: { userId, date: today } },
     include: { items: { orderBy: { position: 'asc' } } },
   })
+
+  if (!edition) return null
+
+  // Garante tradução em tempo real caso existam títulos em inglês legados gravados no banco
+  const updatedItems = await Promise.all(
+    edition.items.map(async (item) => {
+      if (isProbablyEnglish(item.normalizedTitle)) {
+        const translated = await translateSingleTitle(item.originalTitle || item.normalizedTitle)
+        if (translated && translated !== item.normalizedTitle) {
+          prisma.newsItem.update({
+            where: { id: item.id },
+            data: { normalizedTitle: translated }
+          }).catch(() => {})
+          return { ...item, normalizedTitle: translated }
+        }
+      }
+      return item
+    })
+  )
+
+  return { ...edition, items: updatedItems }
 }
