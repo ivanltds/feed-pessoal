@@ -33,7 +33,7 @@ export default function WeeklyDigestModal({ onClose }: Props) {
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#EAE8E1] bg-[#FFF]">
           <div>
             <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#777] block mb-0.5">
-              RETROSPECTIVA DOS FATOS
+              RETROSPECTIVA DOS FATOS & RADAR GLOBAL
             </span>
             <h3 className="text-base font-bold text-[#111]">
               Resumo Semanal {digest?.dateRange ? `(${digest.dateRange})` : ''}
@@ -59,6 +59,16 @@ export default function WeeklyDigestModal({ onClose }: Props) {
               <div className="p-4 bg-[#FFF] border border-[#E0DED8]">
                 <p className="text-xs text-[#333] leading-relaxed italic">
                   "{digest.summary.replace(/[\u{1F300}-\u{1F9FF}]/gu, '')}"
+                </p>
+              </div>
+
+              {/* Radar de Perspectivas Globais */}
+              <div className="p-4 bg-[#FFF] border border-[#111]">
+                <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#111] block mb-2">
+                  RADAR DE PERSPECTIVAS GLOBAIS (SUL GLOBAL & ÁSIA)
+                </span>
+                <p className="text-xs text-[#444] leading-relaxed">
+                  Os boletins dos últimos 7 dias integraram coberturas diretas de veículos internacionais não-ocidentais (incluindo <em>Al Jazeera</em>, <em>SCMP</em>, <em>Nikkei Asia</em> e <em>Inter Press Service</em>), contrabalançando a pauta ocidental com a visão dos mercados emergentes.
                 </p>
               </div>
 

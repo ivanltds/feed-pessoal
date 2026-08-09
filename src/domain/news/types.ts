@@ -148,6 +148,7 @@ export interface RawNewsItem {
   imageUrl?: string
   publishedAt: Date
   summary?: string
+  region?: string
 }
 
 export interface NewsItem extends RawNewsItem {

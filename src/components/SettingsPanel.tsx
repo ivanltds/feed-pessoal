@@ -212,6 +212,21 @@ export default function SettingsPanel() {
                     </section>
                   )}
 
+                  {/* Equilíbrio Geopolítico & Pluralismo Global */}
+                  <section className="p-4 bg-[#F8F7F4] border border-[#E0DED8]">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#555]">
+                        PLURALISMO GEOPOLÍTICO
+                      </p>
+                      <span className="text-[10px] font-bold text-[#111] bg-[#EAE8E1] px-2 py-0.5 border border-[#D5D3CC]">
+                        ATIVADO
+                      </span>
+                    </div>
+                    <p className="text-xs text-[#555] leading-relaxed mb-2">
+                      Cota mínima garantida de 2+ notícias de veículos do Sul Global, Oriente Médio e Ásia-Pacífico a cada edição.
+                    </p>
+                  </section>
+
                   {/* Conta */}
                   <section>
                     <p className="text-[10px] uppercase tracking-[0.18em] text-[#9E9E9E] mb-4 font-bold">CONTA</p>

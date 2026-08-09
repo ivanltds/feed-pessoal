@@ -13,6 +13,8 @@ interface NewsItem {
   isAiSelectedImage?: boolean
   url: string
   publishedAt: Date
+  score?: number
+  region?: string
 }
 
 interface Props {
@@ -26,6 +28,13 @@ function timeAgo(date: Date): string {
   const hours = Math.floor(minutes / 60)
   if (hours < 24) return `${hours}h`
   return `${Math.floor(hours / 24)}d`
+}
+
+function formatRegion(region?: string): string {
+  if (region === 'ORIENTE_MEDIO') return 'ORIENTE MÉDIO'
+  if (region === 'ASIA_PACIFICO') return 'ÁSIA-PACÍFICO'
+  if (region === 'SUL_GLOBAL') return 'SUL GLOBAL'
+  return 'OCIDENTAL'
 }
 
 function useImgStatus(src: string) {
@@ -95,6 +104,7 @@ function CompactImg({ src }: { src: string }) {
 export default function NewsCard({ item, variant = 'compact' }: Props) {
   const [modalOpen, setModalOpen] = useState(false)
   const ago = timeAgo(item.publishedAt)
+  const regionTag = formatRegion(item.region)
 
   const open = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -122,7 +132,7 @@ export default function NewsCard({ item, variant = 'compact' }: Props) {
           {item.summary && (
             <p className="text-sm text-[#5C5C5C] leading-relaxed mb-3">{item.summary}</p>
           )}
-          <p className="text-xs text-[#9E9E9E]">{item.sourceName}&ensp;·&ensp;{ago}</p>
+          <p className="text-xs text-[#9E9E9E]">{item.sourceName}&ensp;·&ensp;{regionTag}&ensp;·&ensp;{ago}</p>
         </button>
         {modalOpen && <NewsModal item={item} onClose={() => setModalOpen(false)} />}
       </>
@@ -146,7 +156,7 @@ export default function NewsCard({ item, variant = 'compact' }: Props) {
           {item.summary && (
             <p className="text-xs text-[#5C5C5C] leading-relaxed mb-2 line-clamp-2">{item.summary}</p>
           )}
-          <p className="text-xs text-[#9E9E9E]">{item.sourceName}&ensp;·&ensp;{ago}</p>
+          <p className="text-xs text-[#9E9E9E]">{item.sourceName}&ensp;·&ensp;{regionTag}&ensp;·&ensp;{ago}</p>
         </button>
         {modalOpen && <NewsModal item={item} onClose={() => setModalOpen(false)} />}
       </>
@@ -167,7 +177,7 @@ export default function NewsCard({ item, variant = 'compact' }: Props) {
           <h2 className="text-sm font-semibold leading-snug text-[#111] group-hover:opacity-60 transition-opacity duration-200 mb-1.5">
             {item.normalizedTitle}
           </h2>
-          <p className="text-xs text-[#9E9E9E]">{item.sourceName}&ensp;·&ensp;{ago}</p>
+          <p className="text-xs text-[#9E9E9E]">{item.sourceName}&ensp;·&ensp;{regionTag}&ensp;·&ensp;{ago}</p>
         </button>
         {modalOpen && <NewsModal item={item} onClose={() => setModalOpen(false)} />}
       </>
@@ -186,7 +196,7 @@ export default function NewsCard({ item, variant = 'compact' }: Props) {
           {item.summary && (
             <p className="text-xs text-[#5C5C5C] leading-relaxed line-clamp-2 mb-1.5">{item.summary}</p>
           )}
-          <p className="text-xs text-[#9E9E9E]">{item.sourceName}&ensp;·&ensp;{ago}</p>
+          <p className="text-xs text-[#9E9E9E]">{item.sourceName}&ensp;·&ensp;{regionTag}&ensp;·&ensp;{ago}</p>
         </div>
       </button>
       {modalOpen && <NewsModal item={item} onClose={() => setModalOpen(false)} />}

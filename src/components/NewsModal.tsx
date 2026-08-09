@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import type { NewsPerspective } from '@/services/perspective-generator'
+import type { NarrativeComparisonResult } from '@/services/narrative-comparator'
 import { useDeepDive } from '@/hooks/useDeepDive'
 
 interface NewsItem {
@@ -15,6 +16,7 @@ interface NewsItem {
   url: string
   publishedAt: Date
   score?: number
+  region?: string
 }
 
 interface Props {
@@ -30,15 +32,27 @@ function timeAgo(date: Date): string {
   return `${Math.floor(hours / 24)}d atrás`
 }
 
+function formatRegion(region?: string): string {
+  if (region === 'ORIENTE_MEDIO') return 'ORIENTE MÉDIO'
+  if (region === 'ASIA_PACIFICO') return 'ÁSIA-PACÍFICO'
+  if (region === 'SUL_GLOBAL') return 'SUL GLOBAL'
+  return 'OCIDENTAL'
+}
+
 export default function NewsModal({ item, onClose }: Props) {
   const [perspectives, setPerspectives] = useState<NewsPerspective[]>([])
   const [loadingP, setLoadingP] = useState(true)
   const [activeTab, setActiveTab] = useState<string | null>(null)
   const [showAuditInfo, setShowAuditInfo] = useState(false)
   
-  // Garante que se o item veio sem imagem, inicia o estado de curadoria por IA
-  const initialImage = item.imageUrl ?? `https://picsum.photos/seed/${encodeURIComponent(item.id)}/1200/675`
-  const [modalImageUrl, setModalImageUrl] = useState<string>(initialImage)
+  // Estado para o Comparador de Narrativas Universal
+  const [showComparison, setShowComparison] = useState(false)
+  const [comparisonLoading, setComparisonLoading] = useState(false)
+  const [comparisonData, setComparisonData] = useState<NarrativeComparisonResult | null>(null)
+
+  const [modalImageUrl, setModalImageUrl] = useState<string>(
+    item.imageUrl ?? `https://picsum.photos/seed/${encodeURIComponent(item.id)}/1200/675`
+  )
   const [isAiSelected, setIsAiSelected] = useState<boolean>(!item.imageUrl || (item.isAiSelectedImage ?? false))
   const [enrichingImage, setEnrichingImage] = useState<boolean>(!item.imageUrl)
 
@@ -99,6 +113,25 @@ export default function NewsModal({ item, onClose }: Props) {
       .finally(() => setLoadingP(false))
   }, [item.id])
 
+  // Função para carregar comparação de narrativas
+  const handleToggleComparison = () => {
+    if (!showComparison && !comparisonData) {
+      setComparisonLoading(true)
+      fetch('/api/narrative-comparison', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newsItemId: item.id })
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          if (!data.error) setComparisonData(data)
+        })
+        .catch(() => {})
+        .finally(() => setComparisonLoading(false))
+    }
+    setShowComparison(!showComparison)
+  }
+
   return (
     <div
       className="fixed inset-0 flex items-end sm:items-center justify-center"
@@ -131,12 +164,18 @@ export default function NewsModal({ item, onClose }: Props) {
           className="flex items-center justify-between px-6 py-4"
           style={{ borderBottom: '1px solid #EAE8E1' }}
         >
-          <span
-            className="text-[10px] font-semibold uppercase tracking-[0.2em]"
-            style={{ color: '#777' }}
-          >
-            {item.topic}
-          </span>
+          <div className="flex items-center gap-2">
+            <span
+              className="text-[10px] font-semibold uppercase tracking-[0.2em]"
+              style={{ color: '#777' }}
+            >
+              {item.topic}
+            </span>
+            <span className="text-[10px] text-[#BBB]">·</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[#111]">
+              {formatRegion(item.region)}
+            </span>
+          </div>
           <button
             onClick={onClose}
             style={{ color: '#888', lineHeight: 1 }}
@@ -149,14 +188,13 @@ export default function NewsModal({ item, onClose }: Props) {
           </button>
         </div>
 
-        {/* Imagem (100% Garantida com Imagem Selecionada por IA) */}
+        {/* Imagem (100% Garantida) */}
         <div className="w-full relative" style={{ aspectRatio: '16/9', overflow: 'hidden', background: '#E3E2DC' }}>
           <img
             src={modalImageUrl}
             alt=""
             className="w-full h-full object-cover"
             onError={() => {
-              // Em caso de erro na URL primária, usa fallback fotográfico imediato
               setModalImageUrl(`https://picsum.photos/seed/${encodeURIComponent(item.id)}/1200/675`)
               setIsAiSelected(true)
             }}
@@ -187,21 +225,65 @@ export default function NewsModal({ item, onClose }: Props) {
             </p>
           )}
 
-          <div className="flex items-center justify-between text-xs text-[#888] mb-6 border-b border-[#EAE8E1] pb-4">
+          <div className="flex flex-wrap items-center justify-between text-xs text-[#888] mb-6 border-b border-[#EAE8E1] pb-4 gap-2">
             <div className="flex items-center gap-2">
               <span className="font-medium text-[#444]">{item.sourceName}</span>
               <span>·</span>
               <span>{timeAgo(item.publishedAt)}</span>
             </div>
 
-            {/* Selo de Transparência da Recomendação */}
-            <button
-              onClick={() => setShowAuditInfo(!showAuditInfo)}
-              className="text-[10px] font-bold uppercase tracking-wider text-[#555] hover:text-[#111] underline transition-colors"
-            >
-              {showAuditInfo ? 'Ocultar detalhes' : 'Por que esta notícia?'}
-            </button>
+            <div className="flex items-center gap-3">
+              {/* Botão Universal de Comparar Narrativas */}
+              <button
+                onClick={handleToggleComparison}
+                className="text-[10px] font-bold uppercase tracking-wider text-[#111] hover:underline flex items-center gap-1 bg-[#EAE8E1] px-2 py-1 border border-[#D5D3CC]"
+              >
+                <span>Comparar Narrativas</span>
+              </button>
+
+              <button
+                onClick={() => setShowAuditInfo(!showAuditInfo)}
+                className="text-[10px] font-bold uppercase tracking-wider text-[#555] hover:text-[#111] underline transition-colors"
+              >
+                {showAuditInfo ? 'Ocultar detalhes' : 'Por que esta notícia?'}
+              </button>
+            </div>
           </div>
+
+          {/* Painel do Comparador de Narrativas Cross-Source */}
+          {showComparison && (
+            <div className="mb-6 p-4 bg-[#FFF] border border-[#111]">
+              <div className="flex items-center justify-between mb-3 pb-2 border-b border-[#EAE8E1]">
+                <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#111]">
+                  COMPARADOR DE NARRATIVAS CROSS-SOURCE
+                </span>
+                <span className="text-[10px] text-[#888] uppercase">IA Geopolítica</span>
+              </div>
+
+              {comparisonLoading ? (
+                <div className="py-4 text-center">
+                  <p className="text-xs text-[#777] animate-pulse">Analisando enquadramentos geopolíticos...</p>
+                </div>
+              ) : comparisonData ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                  <div className="p-3 bg-[#F8F7F4] border border-[#E0DED8]">
+                    <span className="text-[10px] font-bold uppercase text-[#555] block mb-1">
+                      ENQUADRAMENTO OCIDENTAL
+                    </span>
+                    <h5 className="font-bold text-[#111] mb-1">{comparisonData.westernPerspective.title}</h5>
+                    <p className="text-[#555] leading-relaxed">{comparisonData.westernPerspective.summary}</p>
+                  </div>
+                  <div className="p-3 bg-[#F8F7F4] border border-[#E0DED8]">
+                    <span className="text-[10px] font-bold uppercase text-[#111] block mb-1">
+                      VISÃO DO SUL GLOBAL & EMERGENTES
+                    </span>
+                    <h5 className="font-bold text-[#111] mb-1">{comparisonData.globalSouthPerspective.title}</h5>
+                    <p className="text-[#555] leading-relaxed">{comparisonData.globalSouthPerspective.summary}</p>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          )}
 
           {/* Painel de Transparência Factual da Recomendação */}
           {showAuditInfo && (
@@ -223,8 +305,8 @@ export default function NewsModal({ item, onClose }: Props) {
                   <span className="font-semibold text-[#111]">{item.topic}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-[#777]">Fonte de Origem:</span>
-                  <span className="font-semibold text-[#111]">{item.sourceName}</span>
+                  <span className="text-[#777]">Fonte & Região:</span>
+                  <span className="font-semibold text-[#111]">{item.sourceName} ({formatRegion(item.region)})</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-[#777]">Recência da Publicação:</span>
@@ -260,14 +342,14 @@ export default function NewsModal({ item, onClose }: Props) {
             ) : perspectives.length > 0 ? (
               <div className="space-y-2">
                 {/* Selector de Abas Monocromáticas */}
-                <div className="flex gap-1 p-1 mb-3 bg-[#F2F1ED] border border-[#E0DED8]">
+                <div className="flex flex-wrap gap-1 p-1 mb-3 bg-[#F2F1ED] border border-[#E0DED8]">
                   {perspectives.map((p) => {
                     const isActive = activeTab === p.type
                     return (
                       <button
                         key={p.type}
                         onClick={() => setActiveTab(p.type)}
-                        className="flex-1 py-1.5 px-2 text-[11px] font-medium tracking-tight transition-all text-center uppercase"
+                        className="flex-1 py-1.5 px-2 text-[10px] font-semibold tracking-tight transition-all text-center uppercase whitespace-nowrap"
                         style={{
                           background: isActive ? '#111' : 'transparent',
                           color: isActive ? '#FFF' : '#5C5C5C',

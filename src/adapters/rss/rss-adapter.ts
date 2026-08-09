@@ -12,6 +12,7 @@ export interface RssSource {
   name: string
   url: string
   topic: Topic
+  region?: string
 }
 
 const BLACKLISTED_IMAGE_PATTERNS = [
@@ -69,6 +70,7 @@ export async function fetchFromRss(source: RssSource): Promise<RawNewsItem[]> {
       sourceId: source.id,
       sourceName: source.name,
       topic: source.topic,
+      region: source.region ?? 'OCIDENTAL',
       title: item.title ?? 'Sem título',
       url: item.link ?? '',
       imageUrl: extractImage(item as unknown as Parser.Item & Record<string, unknown>),

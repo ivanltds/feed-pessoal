@@ -86,8 +86,21 @@ export async function buildEditionForUser(userId: string): Promise<BuildResult> 
     return 'no_items'
   }
 
-  // rankeia e seleciona os itens mais relevantes
-  const rankedItems = rankItems(rawItems, topicWeights)
+  // rankeia os itens
+  let rankedItems = rankItems(rawItems, topicWeights)
+
+  // Cota Mínima Garantida: Assegura pelo menos 2 matérias de fontes não-ocidentais/Sul Global na edição
+  const nonWesternSelected = rankedItems.filter((it) => it.region && it.region !== 'OCIDENTAL')
+  if (nonWesternSelected.length < 2) {
+    const nonWesternPool = rawItems.filter(
+      (it) => it.region && it.region !== 'OCIDENTAL' && !rankedItems.some((r) => r.url === it.url)
+    )
+    const needed = 2 - nonWesternSelected.length
+    const toInject = nonWesternPool.slice(0, needed).map((it) => ({ ...it, score: 3.8, normalizedTitle: it.title }))
+    if (toInject.length > 0) {
+      rankedItems = [...rankedItems.slice(0, Math.max(1, rankedItems.length - toInject.length)), ...toInject]
+    }
+  }
 
   // normaliza títulos e gera resumos em paralelo
   const originalTitles = rankedItems.map((i) => i.title)
