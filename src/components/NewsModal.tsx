@@ -346,12 +346,30 @@ export default function NewsModal({ item, onClose }: Props) {
                     {comparisonData.actors
                       .filter((a) => selectedActorIds.includes(a.id))
                       .map((actor) => (
-                        <div key={actor.id} className="p-3.5 bg-[#F8F7F4] border border-[#111]">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-[#555] block mb-1 border-b border-[#EAE8E1] pb-1">
-                            {actor.name}
-                          </span>
-                          <h5 className="font-bold text-[#111] mb-1.5 leading-snug">{actor.title}</h5>
-                          <p className="text-[#444] leading-relaxed">{actor.summary}</p>
+                        <div key={actor.id} className="p-3.5 bg-[#F8F7F4] border border-[#111] flex flex-col justify-between">
+                          <div>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-[#555] block mb-1 border-b border-[#EAE8E1] pb-1">
+                              {actor.name}
+                            </span>
+                            <h5 className="font-bold text-[#111] mb-1.5 leading-snug">{actor.title}</h5>
+                            <p className="text-[#444] leading-relaxed mb-3">{actor.summary}</p>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => openQuestion({
+                              id: `actor-${item.id}-${actor.id}`,
+                              text: `Aprofundar na perspectiva de '${actor.name}' sobre '${item.normalizedTitle}'`,
+                              topic: item.topic,
+                              newsItemId: item.id
+                            })}
+                            className="text-[10px] uppercase tracking-wider font-semibold text-[#111] hover:underline flex items-center gap-1 border-t border-[#EAE8E1] pt-2.5 mt-auto"
+                          >
+                            <span>Aprofundar via chat</span>
+                            <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </button>
                         </div>
                       ))}
                   </div>

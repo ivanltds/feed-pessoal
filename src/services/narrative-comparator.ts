@@ -29,24 +29,20 @@ export async function compareNarratives(item: {
   try {
     const response = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
-      max_tokens: 800,
+      max_tokens: 1200,
       temperature: 0.4,
       response_format: { type: 'json_object' },
       messages: [
         {
           role: 'system',
-          content: `Você é um analista universal de inteligência de notícias, antropologia social e geopolítica.
+          content: `Você é um analista sênior de inteligência de notícias, antropologia social e geopolítica internacional.
 Dada a notícia fornecida (qualquer que seja o tema: Esportes, Geopolítica, Economia, Tecnologia, Sociedade, Cidades ou Cultura), sua tarefa é identificar de 2 até NO MÁXIMO 5 partes interessadas (atores, lados envolvidos ou grupos humanos/institucionais afetados).
 
-EXEMPLOS DE ATRIBUIÇÃO DE ATORES CONTEXTUAIS:
-- Se for briga de torcidas em esportes → Atores: Torcida A, Torcida Rival B, Família do agredido, Comerciantes/Moradores locais, Organização/Polícia.
-- Se for guerra ou diplomacia → Atores: Governo A, Governo B, Nações Aliadas, Sul Global/Emergentes, População local afetada.
-- Se for taxação ou regulamentação → Atores: Consumidores, Pequenos Importadores/Empresas, Indústria Nacional, Ministério da Fazenda, Plataformas Globais.
-
-REGRAS:
-- Extraia de 2 a 5 atores reais do contexto.
-- Para cada ator, forneça o nome do grupo ("name"), o título curto da posição ("title") e uma síntese de 1 a 2 frases da perspectiva/enquadramento fático ("summary").
-- Escreva obrigatoriamente em ${langName}.
+REGRAS RÍGIDAS DE ELABORAÇÃO:
+1. Identifique de 2 a 5 atores reais e distintos envolvidos no contexto da notícia.
+2. Para CADA ator, elabore um texto analítico aprofundado ("summary") de 3 a 4 frases detalhadas. Explique claramente as motivações desse ator, seus argumentos centrais, suas preocupações factuais e sua justificativa sobre o acontecimento.
+3. Evite frases genéricas de 1 linha. Forneça substância fática e riqueza de perspectiva para cada lado.
+4. Escreva obrigatoriamente em ${langName}.
 
 Retorne um JSON exatamente no formato:
 {
@@ -54,8 +50,8 @@ Retorne um JSON exatamente no formato:
     {
       "id": "identificador_unico_slug",
       "name": "Nome do Ator / Parte Interessada",
-      "title": "Título curto do enquadramento (máx 50 caracteres)",
-      "summary": "Síntese fática de 1-2 frases da visão deste ator."
+      "title": "Título do Enquadramento (máx 50 caracteres)",
+      "summary": "Análise elaborada de 3 a 4 frases detalhadas cobrindo os argumentos, preocupações e justificativa deste ator."
     }
   ]
 }`
@@ -72,7 +68,7 @@ Retorne um JSON exatamente no formato:
       id: a.id || `actor-${idx}`,
       name: a.name || `Parte Interessada ${idx + 1}`,
       title: a.title || 'Enquadramento fático',
-      summary: a.summary || 'Análise da perspectiva desta parte interessada sobre o acontecimento.'
+      summary: a.summary || `Análise detalhada sobre o enquadramento e os desdobramentos desta parte interessada em relação a ${item.normalizedTitle}.`
     }))
 
     if (sanitizedActors.length === 0) {
@@ -83,13 +79,13 @@ Retorne um JSON exatamente no formato:
             id: 'institucional',
             name: 'Perspectiva Institucional',
             title: 'Posição dos Órgãos Oficiais',
-            summary: 'Enquadramento focado nas normativas e declarações oficiais sobre o acontecimento.'
+            summary: `Defesa das normativas oficiais e diretrizes regulatórias aplicáveis a ${item.normalizedTitle}. Argumenta pelo cumprimento das regras vigentes e pela estabilidade das operações.`
           },
           {
             id: 'afetados',
             name: 'Partes Afetadas Diretas',
             title: 'Impacto nos Grupos Envolvidos',
-            summary: 'Visão fática das pessoas, comunidades ou mercados diretamente atingidos.'
+            summary: `Visão fática das pessoas, comunidades ou empresas diretamente atingidas pelos desdobramentos de ${item.normalizedTitle}. Aponta os custos práticos e os desafios gerados pela medida.`
           }
         ]
       }
@@ -108,13 +104,13 @@ Retorne um JSON exatamente no formato:
           id: 'institucional',
           name: 'Perspectiva Institucional',
           title: 'Posição dos Órgãos Oficiais',
-          summary: 'Enquadramento focado nas normativas e declarações oficiais sobre o acontecimento.'
+          summary: `Defesa das normativas oficiais e diretrizes regulatórias aplicáveis a ${item.normalizedTitle}. Argumenta pelo cumprimento das regras vigentes e pela estabilidade das operações.`
         },
         {
           id: 'afetados',
           name: 'Partes Afetadas Diretas',
           title: 'Impacto nos Grupos Envolvidos',
-          summary: 'Visão fática das pessoas, comunidades ou mercados diretamente atingidos.'
+          summary: `Visão fática das pessoas, comunidades ou empresas diretamente atingidas pelos desdobramentos de ${item.normalizedTitle}. Aponta os custos práticos e os desafios gerados pela medida.`
         }
       ]
     }
