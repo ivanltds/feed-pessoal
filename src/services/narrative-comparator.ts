@@ -1,16 +1,16 @@
 import { openai } from '@/lib/openai'
 import { SUPPORTED_LANGUAGES } from './summary-generator'
 
+export interface NarrativeActor {
+  id: string
+  name: string
+  title: string
+  summary: string
+}
+
 export interface NarrativeComparisonResult {
   newsItemId: string
-  westernPerspective: {
-    title: string
-    summary: string
-  }
-  globalSouthPerspective: {
-    title: string
-    summary: string
-  }
+  actors: NarrativeActor[]
 }
 
 export async function compareNarratives(item: {
@@ -24,32 +24,40 @@ export async function compareNarratives(item: {
   const language = item.language ?? 'pt-BR'
   const langName = SUPPORTED_LANGUAGES[language] ?? language
 
-  const context = `Título: ${item.normalizedTitle}\nTópico: ${item.topic}\nFonte: ${item.sourceName ?? 'Global'}\nResumo: ${item.summary ?? ''}`
+  const context = `Tópico: ${item.topic}\nTítulo da Notícia: ${item.normalizedTitle}\nFonte: ${item.sourceName ?? 'Geral'}\nResumo/Fato: ${item.summary ?? ''}`
 
   try {
     const response = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
-      max_tokens: 500,
+      max_tokens: 800,
       temperature: 0.4,
       response_format: { type: 'json_object' },
       messages: [
         {
           role: 'system',
-          content: `Você é um analista geopolítico internacional imparcial especializado em crítica comparativa de mídia.
-Sua tarefa é analisar o fato da notícia e gerar um confronto analítico entre duas narrativas em ${langName}:
-1. "westernPerspective": Como a imprensa tradicional ocidental (EUA/Europa Ocidental) costuma cobrir e enquadrar este tipo de fato.
-2. "globalSouthPerspective": Como este mesmo fato é interpretado pela perspectiva do Sul Global, economias emergentes (BRICS/Ásia/África/América Latina) ou veículos não-ocidentais.
+          content: `Você é um analista universal de inteligência de notícias, antropologia social e geopolítica.
+Dada a notícia fornecida (qualquer que seja o tema: Esportes, Geopolítica, Economia, Tecnologia, Sociedade, Cidades ou Cultura), sua tarefa é identificar de 2 até NO MÁXIMO 5 partes interessadas (atores, lados envolvidos ou grupos humanos/institucionais afetados).
+
+EXEMPLOS DE ATRIBUIÇÃO DE ATORES CONTEXTUAIS:
+- Se for briga de torcidas em esportes → Atores: Torcida A, Torcida Rival B, Família do agredido, Comerciantes/Moradores locais, Organização/Polícia.
+- Se for guerra ou diplomacia → Atores: Governo A, Governo B, Nações Aliadas, Sul Global/Emergentes, População local afetada.
+- Se for taxação ou regulamentação → Atores: Consumidores, Pequenos Importadores/Empresas, Indústria Nacional, Ministério da Fazenda, Plataformas Globais.
+
+REGRAS:
+- Extraia de 2 a 5 atores reais do contexto.
+- Para cada ator, forneça o nome do grupo ("name"), o título curto da posição ("title") e uma síntese de 1 a 2 frases da perspectiva/enquadramento fático ("summary").
+- Escreva obrigatoriamente em ${langName}.
 
 Retorne um JSON exatamente no formato:
 {
-  "westernPerspective": {
-    "title": "Enquadramento Ocidental (máx 50 caracteres)",
-    "summary": "Resumo explicativo em 2 frases curtas."
-  },
-  "globalSouthPerspective": {
-    "title": "Visão do Sul Global & Emergentes (máx 50 caracteres)",
-    "summary": "Resumo explicativo em 2 frases curtas."
-  }
+  "actors": [
+    {
+      "id": "identificador_unico_slug",
+      "name": "Nome do Ator / Parte Interessada",
+      "title": "Título curto do enquadramento (máx 50 caracteres)",
+      "summary": "Síntese fática de 1-2 frases da visão deste ator."
+    }
+  ]
 }`
         },
         { role: 'user', content: context }
@@ -57,34 +65,58 @@ Retorne um JSON exatamente no formato:
     })
 
     const content = response.choices[0]?.message?.content ?? '{}'
-    const parsed = JSON.parse(content) as {
-      westernPerspective?: { title: string; summary: string }
-      globalSouthPerspective?: { title: string; summary: string }
+    const parsed = JSON.parse(content) as { actors?: NarrativeActor[] }
+
+    const rawActors = parsed.actors ?? []
+    const sanitizedActors: NarrativeActor[] = rawActors.slice(0, 5).map((a, idx) => ({
+      id: a.id || `actor-${idx}`,
+      name: a.name || `Parte Interessada ${idx + 1}`,
+      title: a.title || 'Enquadramento fático',
+      summary: a.summary || 'Análise da perspectiva desta parte interessada sobre o acontecimento.'
+    }))
+
+    if (sanitizedActors.length === 0) {
+      return {
+        newsItemId: item.id,
+        actors: [
+          {
+            id: 'institucional',
+            name: 'Perspectiva Institucional',
+            title: 'Posição dos Órgãos Oficiais',
+            summary: 'Enquadramento focado nas normativas e declarações oficiais sobre o acontecimento.'
+          },
+          {
+            id: 'afetados',
+            name: 'Partes Afetadas Diretas',
+            title: 'Impacto nos Grupos Envolvidos',
+            summary: 'Visão fática das pessoas, comunidades ou mercados diretamente atingidos.'
+          }
+        ]
+      }
     }
 
     return {
       newsItemId: item.id,
-      westernPerspective: parsed.westernPerspective ?? {
-        title: 'Enquadramento Institucional Ocidental',
-        summary: 'Foco na estabilidade de mercado e alinhamento às diretrizes regulatórias norte-americanas e europeias.'
-      },
-      globalSouthPerspective: parsed.globalSouthPerspective ?? {
-        title: 'Perspectiva dos Países Emergentes',
-        summary: 'Foco nos impactos de soberania, desenvolvimento local e autonomia em relação ao eixo ocidental.'
-      }
+      actors: sanitizedActors
     }
   } catch (error) {
-    console.error('[NarrativeComparator] Erro ao comparar narrativas:', error)
+    console.error('[NarrativeComparator] Erro ao extrair partes interessadas:', error)
     return {
       newsItemId: item.id,
-      westernPerspective: {
-        title: 'Enquadramento Institucional Ocidental',
-        summary: 'Foco na estabilidade de mercado e diretrizes ocidentais.'
-      },
-      globalSouthPerspective: {
-        title: 'Perspectiva dos Países Emergentes',
-        summary: 'Foco nos impactos de desenvolvimento local e autonomia dos mercados emergentes.'
-      }
+      actors: [
+        {
+          id: 'institucional',
+          name: 'Perspectiva Institucional',
+          title: 'Posição dos Órgãos Oficiais',
+          summary: 'Enquadramento focado nas normativas e declarações oficiais sobre o acontecimento.'
+        },
+        {
+          id: 'afetados',
+          name: 'Partes Afetadas Diretas',
+          title: 'Impacto nos Grupos Envolvidos',
+          summary: 'Visão fática das pessoas, comunidades ou mercados diretamente atingidos.'
+        }
+      ]
     }
   }
 }

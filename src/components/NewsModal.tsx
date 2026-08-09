@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import type { NewsPerspective } from '@/services/perspective-generator'
-import type { NarrativeComparisonResult } from '@/services/narrative-comparator'
+import type { NarrativeComparisonResult, NarrativeActor } from '@/services/narrative-comparator'
 import { useDeepDive } from '@/hooks/useDeepDive'
 
 interface NewsItem {
@@ -45,10 +45,11 @@ export default function NewsModal({ item, onClose }: Props) {
   const [activeTab, setActiveTab] = useState<string | null>(null)
   const [showAuditInfo, setShowAuditInfo] = useState(false)
   
-  // Estado para o Comparador de Narrativas Universal
+  // Estado para o Comparador de Narrativas Universal por Atores
   const [showComparison, setShowComparison] = useState(false)
   const [comparisonLoading, setComparisonLoading] = useState(false)
   const [comparisonData, setComparisonData] = useState<NarrativeComparisonResult | null>(null)
+  const [selectedActorIds, setSelectedActorIds] = useState<string[]>([])
 
   const [modalImageUrl, setModalImageUrl] = useState<string>(
     item.imageUrl ?? `https://picsum.photos/seed/${encodeURIComponent(item.id)}/1200/675`
@@ -113,7 +114,7 @@ export default function NewsModal({ item, onClose }: Props) {
       .finally(() => setLoadingP(false))
   }, [item.id])
 
-  // Função para carregar comparação de narrativas
+  // Função para carregar comparação de narrativas por partes interessadas
   const handleToggleComparison = () => {
     if (!showComparison && !comparisonData) {
       setComparisonLoading(true)
@@ -123,13 +124,22 @@ export default function NewsModal({ item, onClose }: Props) {
         body: JSON.stringify({ newsItemId: item.id })
       })
         .then((r) => r.json())
-        .then((data) => {
-          if (!data.error) setComparisonData(data)
+        .then((data: NarrativeComparisonResult) => {
+          if (data.actors && data.actors.length > 0) {
+            setComparisonData(data)
+            setSelectedActorIds(data.actors.map((a) => a.id))
+          }
         })
         .catch(() => {})
         .finally(() => setComparisonLoading(false))
     }
     setShowComparison(!showComparison)
+  }
+
+  const toggleActor = (actorId: string) => {
+    setSelectedActorIds((prev) =>
+      prev.includes(actorId) ? prev.filter((id) => id !== actorId) : [...prev, actorId]
+    )
   }
 
   return (
@@ -271,14 +281,14 @@ export default function NewsModal({ item, onClose }: Props) {
             </div>
           )}
 
-          {/* BOTÃO PROMINENTE E DESTACADO: COMPARAR NARRATIVAS */}
+          {/* BOTÃO PROMINENTE E DESTACADO: COMPARAR NARRATIVAS & PARTES INTERESSADAS */}
           <div className="mb-6 p-4 bg-[#FFF] border border-[#111] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#111] block mb-0.5">
-                ANÁLISE PLURAL DE MÍDIA
+                ANÁLISE PLURAL DE MÍDIA & PARTES INTERESSADAS
               </span>
               <span className="text-xs text-[#555] block">
-                Confrontar visão Ocidental vs. Sul Global & Emergentes
+                Confrontar visões dos atores e envolvidos na notícia (até 5 perspectivas)
               </span>
             </div>
             <button
@@ -289,39 +299,68 @@ export default function NewsModal({ item, onClose }: Props) {
             </button>
           </div>
 
-          {/* Painel do Comparador de Narrativas Cross-Source */}
+          {/* Painel de Comparação Dinâmica por Atores (Seletor + Grid) */}
           {showComparison && (
-            <div className="mb-6 p-4 bg-[#FFF] border border-[#111] animate-fadeIn">
+            <div className="mb-6 p-4 bg-[#FFF] border border-[#111]">
               <div className="flex items-center justify-between mb-3 pb-2 border-b border-[#EAE8E1]">
                 <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#111]">
-                  COMPARATIVO DE ENQUADRAMENTO GEOPOLÍTICO
+                  ENQUADRAMENTOS & PARTES INTERESSADAS DIVERGENTES
                 </span>
-                <span className="text-[10px] text-[#888] uppercase">IA Geopolítica</span>
+                <span className="text-[10px] text-[#888] uppercase font-bold">Até 5 Visões</span>
               </div>
 
               {comparisonLoading ? (
                 <div className="py-6 text-center">
                   <div className="w-4 h-4 rounded-full border-2 border-[#111] border-t-transparent animate-spin mx-auto mb-2" />
-                  <p className="text-xs text-[#777] uppercase tracking-wider">Analisando narrativas internacionais...</p>
+                  <p className="text-xs text-[#777] uppercase tracking-wider">Mapeando partes interessadas e visões do fato...</p>
                 </div>
-              ) : comparisonData ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                  <div className="p-3.5 bg-[#F8F7F4] border border-[#E0DED8]">
-                    <span className="text-[10px] font-bold uppercase text-[#555] block mb-1.5 border-b border-[#EAE8E1] pb-1">
-                      ENQUADRAMENTO OCIDENTAL
-                    </span>
-                    <h5 className="font-bold text-[#111] mb-1.5 leading-snug">{comparisonData.westernPerspective.title}</h5>
-                    <p className="text-[#555] leading-relaxed">{comparisonData.westernPerspective.summary}</p>
+              ) : comparisonData && comparisonData.actors && comparisonData.actors.length > 0 ? (
+                <>
+                  {/* Seletor de Pílulas dos Atores */}
+                  <div className="mb-4">
+                    <p className="text-[10px] uppercase tracking-wider text-[#777] mb-2 font-semibold">
+                      Selecione os atores para comparar:
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {comparisonData.actors.map((actor) => {
+                        const isSelected = selectedActorIds.includes(actor.id)
+                        return (
+                          <button
+                            key={actor.id}
+                            type="button"
+                            onClick={() => toggleActor(actor.id)}
+                            className="px-2.5 py-1 text-xs font-semibold transition-all uppercase tracking-wider"
+                            style={{
+                              background: isSelected ? '#111' : '#F8F7F4',
+                              color: isSelected ? '#FFF' : '#555',
+                              border: `1px solid ${isSelected ? '#111' : '#E0DED8'}`,
+                            }}
+                          >
+                            {actor.name}
+                          </button>
+                        )
+                      })}
+                    </div>
                   </div>
-                  <div className="p-3.5 bg-[#F8F7F4] border border-[#111]">
-                    <span className="text-[10px] font-bold uppercase text-[#111] block mb-1.5 border-b border-[#EAE8E1] pb-1">
-                      VISÃO DO SUL GLOBAL & EMERGENTES
-                    </span>
-                    <h5 className="font-bold text-[#111] mb-1.5 leading-snug">{comparisonData.globalSouthPerspective.title}</h5>
-                    <p className="text-[#555] leading-relaxed">{comparisonData.globalSouthPerspective.summary}</p>
+
+                  {/* Grid Comparativo dos Atores Selecionados */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    {comparisonData.actors
+                      .filter((a) => selectedActorIds.includes(a.id))
+                      .map((actor) => (
+                        <div key={actor.id} className="p-3.5 bg-[#F8F7F4] border border-[#111]">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-[#555] block mb-1 border-b border-[#EAE8E1] pb-1">
+                            {actor.name}
+                          </span>
+                          <h5 className="font-bold text-[#111] mb-1.5 leading-snug">{actor.title}</h5>
+                          <p className="text-[#444] leading-relaxed">{actor.summary}</p>
+                        </div>
+                      ))}
                   </div>
-                </div>
-              ) : null}
+                </>
+              ) : (
+                <p className="text-xs text-[#777] text-center py-3">Nenhum ator extraído para este artigo.</p>
+              )}
             </div>
           )}
 

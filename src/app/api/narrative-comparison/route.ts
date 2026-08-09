@@ -30,6 +30,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(result)
   } catch (error) {
     console.error('[ApiNarrativeComparison] Erro:', error)
-    return NextResponse.json({ error: 'Erro ao gerar comparação' }, { status: 500 })
+    return NextResponse.json({ error: 'Erro ao gerar comparação de narrativas' }, { status: 500 })
   }
 }
