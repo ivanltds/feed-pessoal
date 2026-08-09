@@ -237,7 +237,7 @@ export default function NewsModal({ item, onClose }: Props) {
             <div className="flex items-center gap-2">
               <span className="font-medium text-[#444]">{item.sourceName}</span>
               <span>·</span>
-              <span>{timeAgo(item.publishedAt)}</span>
+              <span suppressHydrationWarning>{timeAgo(item.publishedAt)}</span>
             </div>
 
             <button

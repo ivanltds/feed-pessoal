@@ -164,7 +164,7 @@ export default function NewsCard({ item, variant = 'compact' }: Props) {
           {item.summary && (
             <p className="text-sm text-[#5C5C5C] leading-relaxed mb-3">{item.summary}</p>
           )}
-          <p className="text-xs text-[#9E9E9E]">{item.sourceName}&ensp;·&ensp;{regionTag}&ensp;·&ensp;{ago}</p>
+          <p className="text-xs text-[#9E9E9E]">{item.sourceName}&ensp;·&ensp;{regionTag}&ensp;·&ensp;<span suppressHydrationWarning>{ago}</span></p>
         </button>
         {modalOpen && <NewsModal item={item} onClose={() => setModalOpen(false)} />}
       </>
@@ -186,7 +186,7 @@ export default function NewsCard({ item, variant = 'compact' }: Props) {
           {item.summary && (
             <p className="text-xs text-[#5C5C5C] leading-relaxed mb-2 line-clamp-2">{item.summary}</p>
           )}
-          <p className="text-xs text-[#9E9E9E]">{item.sourceName}&ensp;·&ensp;{regionTag}&ensp;·&ensp;{ago}</p>
+          <p className="text-xs text-[#9E9E9E]">{item.sourceName}&ensp;·&ensp;{regionTag}&ensp;·&ensp;<span suppressHydrationWarning>{ago}</span></p>
         </button>
         {modalOpen && <NewsModal item={item} onClose={() => setModalOpen(false)} />}
       </>
@@ -205,7 +205,7 @@ export default function NewsCard({ item, variant = 'compact' }: Props) {
           <h2 className="text-sm font-semibold leading-snug text-[#111] group-hover:opacity-60 transition-opacity duration-200 mb-1.5">
             {item.normalizedTitle}
           </h2>
-          <p className="text-xs text-[#9E9E9E]">{item.sourceName}&ensp;·&ensp;{regionTag}&ensp;·&ensp;{ago}</p>
+          <p className="text-xs text-[#9E9E9E]">{item.sourceName}&ensp;·&ensp;{regionTag}&ensp;·&ensp;<span suppressHydrationWarning>{ago}</span></p>
         </button>
         {modalOpen && <NewsModal item={item} onClose={() => setModalOpen(false)} />}
       </>
@@ -224,7 +224,7 @@ export default function NewsCard({ item, variant = 'compact' }: Props) {
           {item.summary && (
             <p className="text-xs text-[#5C5C5C] leading-relaxed line-clamp-2 mb-1.5">{item.summary}</p>
           )}
-          <p className="text-xs text-[#9E9E9E]">{item.sourceName}&ensp;·&ensp;{regionTag}&ensp;·&ensp;{ago}</p>
+          <p className="text-xs text-[#9E9E9E]">{item.sourceName}&ensp;·&ensp;{regionTag}&ensp;·&ensp;<span suppressHydrationWarning>{ago}</span></p>
         </div>
       </button>
       {modalOpen && <NewsModal item={item} onClose={() => setModalOpen(false)} />}

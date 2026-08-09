@@ -160,6 +160,7 @@ export default function EditionFeed({ items, editionId, date, userId }: Props) {
           </div>
 
           <span
+            suppressHydrationWarning
             className="hidden md:block text-xs capitalize"
             style={{ color: '#9E9E9E', position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}
           >
