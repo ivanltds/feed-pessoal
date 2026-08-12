@@ -183,7 +183,7 @@ export default function EditionFeed({ items, editionId, date, userId }: Props) {
               className="inline-flex items-center text-xs px-2.5 py-1 bg-[#FFF] border border-[#E0DED8] hover:border-[#111] text-[#333] transition-all font-medium uppercase tracking-wider text-[10px]"
               title="Rever o tutorial do aplicativo"
             >
-              <span>💡 Guia do App</span>
+              <span>Guia do App</span>
             </button>
           </div>
 

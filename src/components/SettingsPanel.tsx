@@ -380,9 +380,8 @@ export default function SettingsPanel() {
                   <section className="p-4 border border-[#E0DED8] bg-[#F8F7F4] space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm">🔔</span>
                         <p className="text-[10px] uppercase tracking-[0.18em] text-[#9E9E9E] font-bold">
-                          NOTIFICAÇÕES PUSH / PWA
+                          ALERTAS DA EDIÇÃO DIÁRIA
                         </p>
                       </div>
                       {isPushSubscribed && (
@@ -393,20 +392,20 @@ export default function SettingsPanel() {
                     </div>
 
                     <p className="text-xs text-[#666] leading-relaxed">
-                      Receba uma notificação nativa no seu celular ou computador assim que a sua edição diária for gerada.
+                      Receba um aviso discreto no seu celular ou computador assim que a sua edição diária for gerada.
                     </p>
 
                     {/* Guia para iOS */}
                     {isIos && !isStandalone && (
                       <div className="p-3 bg-[#FEF3C7] border border-[#F59E0B] text-[#92400E] text-xs space-y-1">
-                        <p className="font-bold">📱 Dica para iPhone/iPad:</p>
-                        <p>No iOS, para liberar as notificações, toque no botão <strong>Compartilhar</strong> do Safari e escolha <strong>"Adicionar à Tela de Início"</strong>.</p>
+                        <p className="font-bold">Dica para iPhone/iPad:</p>
+                        <p>No iOS, para liberar os alertas, toque no botão <strong>Compartilhar</strong> do Safari e escolha <strong>"Adicionar à Tela de Início"</strong>.</p>
                       </div>
                     )}
 
                     {!isPushSupported ? (
                       <p className="text-xs text-[#DC2626] font-medium">
-                        Seu navegador atual não suporta Notificações Web Push.
+                        Seu navegador atual não suporta Alertas Web Push.
                       </p>
                     ) : (
                       <div className="space-y-2 pt-1">
@@ -428,7 +427,7 @@ export default function SettingsPanel() {
                             opacity: pushLoading || !prefs.id ? 0.5 : 1
                           }}
                         >
-                          {pushLoading ? 'Processando…' : isPushSubscribed ? 'Desativar Notificações' : 'Ativar Notificações Push'}
+                          {pushLoading ? 'Processando…' : isPushSubscribed ? 'Desativar Alertas' : 'Ativar Alertas da Edição Diária'}
                         </button>
 
                         {isPushSubscribed && prefs.id && (
@@ -447,7 +446,7 @@ export default function SettingsPanel() {
                             }}
                             className="w-full py-2 px-3 text-xs font-medium text-[#111] bg-[#FFF] border border-[#E0DED8] hover:bg-[#F0EFEA] transition-colors"
                           >
-                            {testingPush ? 'Enviando teste…' : '🔔 Disparar notificação de teste'}
+                            {testingPush ? 'Enviando teste…' : 'Testar se os alertas estão chegando no meu aparelho'}
                           </button>
                         )}
 

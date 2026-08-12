@@ -15,39 +15,39 @@ interface TourStep {
 const TOUR_STEPS: TourStep[] = [
   {
     id: 'finite-feed',
-    icon: '☕',
-    badge: '1. RITUAL SEM ANSIEDADE',
+    icon: '[1]',
+    badge: 'PASSO 1 DE 4 — RITUAL DIÁRIO',
     title: 'Sua Edição Diária Tem Fim',
     subtitle: 'Sem scroll infinito de feed caótico',
     content: 'O feed pessoal monta uma edição de 7 a 10 notícias essenciais por dia. Você lê tudo em cerca de 5 minutos e fecha o app com a certeza real de que está em dia.',
-    highlightNote: '💡 A tela avisa "Você está em dia ✓" no final da leitura.'
+    highlightNote: 'Nota: A tela avisa "Você está 100% em dia ✓" no final da leitura.'
   },
   {
     id: 'anti-clickbait',
-    icon: '📰',
-    badge: '2. ANTI-CLICKBAIT POR IA',
+    icon: '[2]',
+    badge: 'PASSO 2 DE 4 — ANTI-CLICKBAIT',
     title: 'Títulos Limpos & Fatos Diretos',
     subtitle: 'Manchetes desarmadas de sensacionalismo',
     content: 'Cada artigo passa por modelos de IA que removem armadilhas de caça-clique e gatilhos emocionais, mantendo a manchete 100% objetiva e informativa.',
-    highlightNote: '💡 Clique em qualquer card para ver o resumo sintetizado em 3 frases.'
+    highlightNote: 'Nota: Toque em qualquer notícia para ler o resumo em 3 frases curtas.'
   },
   {
     id: 'perspectives-360',
-    icon: '🔍',
-    badge: '3. PLURALISMO & TRANSPARÊNCIA',
-    title: '4 Perspectivas & Mapeamento de 5 Lados',
-    subtitle: 'Confronto analítico contra caixas-pretas',
-    content: 'Ao abrir uma notícia, a IA apresenta 4 lentes analíticas (Impacto Prático, Contraponto, Sul Global e Próximos Passos) e compara as justificativas de até 5 partes interessadas.',
-    highlightNote: '💡 Veja o botão "⚖️ Comparar 5 lados do fato" dentro de qualquer modal.'
+    icon: '[3]',
+    badge: 'PASSO 3 DE 4 — IMPARCIALIDADE',
+    title: '4 Lentes & Mapeamento dos Lados',
+    subtitle: 'Confronto analítico de visões divergentes',
+    content: 'Ao abrir uma matéria, nossa IA analisa os impactos práticos, críticas, repercussão internacional e a visão dos grupos envolvidos no fato.',
+    highlightNote: 'Nota: Veja o botão "Ver os Lados e Argumentos dos Envolvidos" dentro de qualquer modal.'
   },
   {
     id: 'deep-dive-push',
-    icon: '🔔',
-    badge: '4. APROFUNDAMENTO & PWA',
-    title: 'Chat com a Notícia & Alertas Diários',
+    icon: '[4]',
+    badge: 'PASSO 4 DE 4 — ALERTAS & CHAT',
+    title: 'Conversa com a Notícia & Alertas Diários',
     subtitle: 'Tire dúvidas direto com a IA',
-    content: 'Cada card gera 3 perguntas sugeridas para você conversar com a IA no chat. Ative as Notificações Push para receber o alerta diário assim que a edição do seu horário for gerada.',
-    highlightNote: '💡 Você pode gerenciar as notificações a qualquer momento nas Configurações.'
+    content: 'Cada matéria gera 3 perguntas sugeridas para você conversar com a IA no chat. Ative os alertas para receber um aviso discreto assim que sua edição estiver pronta.',
+    highlightNote: 'Nota: Você pode gerenciar os alertas a qualquer momento nas Configurações.'
   }
 ]
 
@@ -175,7 +175,7 @@ export default function FirstUseTour({ isOpen, onClose }: FirstUseTourProps) {
             onClick={handleNext}
             className="py-2.5 px-6 text-xs font-semibold uppercase tracking-wider text-[#FFF] bg-[#111] hover:bg-[#333] transition-colors"
           >
-            {isLast ? 'Entendi — Ir pro Feed 🚀' : 'Próximo Passo →'}
+            {isLast ? 'Começar a Ler Minha Edição →' : 'Próximo Passo →'}
           </button>
         </div>
 

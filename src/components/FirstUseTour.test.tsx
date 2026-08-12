@@ -14,7 +14,7 @@ describe('FirstUseTour Component', () => {
     render(<FirstUseTour isOpen={true} onClose={vi.fn()} />)
 
     expect(screen.getByText(/Sua Edição Diária Tem Fim/i)).toBeInTheDocument()
-    expect(screen.getByText(/Passo 1 de 4/i)).toBeInTheDocument()
+    expect(screen.getAllByText(/Passo 1 de 4/i).length).toBeGreaterThan(0)
     expect(screen.getByText(/Pular tutorial ✕/i)).toBeInTheDocument()
   })
 
@@ -25,7 +25,7 @@ describe('FirstUseTour Component', () => {
     fireEvent.click(nextBtn)
 
     expect(screen.getByText(/Títulos Limpos & Fatos Diretos/i)).toBeInTheDocument()
-    expect(screen.getByText(/Passo 2 de 4/i)).toBeInTheDocument()
+    expect(screen.getAllByText(/Passo 2 de 4/i).length).toBeGreaterThan(0)
   })
 
   it('chama onClose ao clicar em Pular tutorial', () => {
