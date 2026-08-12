@@ -6,6 +6,7 @@ import NewsCard from './NewsCard'
 import DoneScreen from './DoneScreen'
 import SettingsPanel from './SettingsPanel'
 import WeeklyDigestModal from './WeeklyDigestModal'
+import FirstUseTour from './FirstUseTour'
 
 interface NewsItem {
   id: string
@@ -28,12 +29,31 @@ interface Props {
 }
 
 export default function EditionFeed({ items, editionId, date, userId }: Props) {
-  const router = useRouter()
   const [doneVisible, setDoneVisible] = useState(false)
   const [rebuilding, setRebuilding] = useState(false)
   const [showWeeklyModal, setShowWeeklyModal] = useState(false)
+  const [showTour, setShowTour] = useState(false)
   const readTimeRef = useRef<Record<string, number>>({})
   const enterTimeRef = useRef<Record<string, number>>({})
+
+  // Checa se é a primeira visita no cliente para abrir o tour de forma limpa
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const tourCompleted = localStorage.getItem('feed_pessoal_tour_completed')
+    if (tourCompleted !== 'true') {
+      const timer = setTimeout(() => {
+        setShowTour(true)
+      }, 600)
+      return () => clearTimeout(timer)
+    }
+  }, [])
+
+  const handleCloseTour = useCallback(() => {
+    setShowTour(false)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('feed_pessoal_tour_completed', 'true')
+    }
+  }, [])
 
   const handleRebuild = useCallback(async () => {
     setRebuilding(true)
@@ -156,6 +176,14 @@ export default function EditionFeed({ items, editionId, date, userId }: Props) {
               className="hidden sm:inline-flex items-center text-xs px-2.5 py-1 bg-[#FFF] border border-[#E0DED8] hover:border-[#111] text-[#333] transition-all font-medium uppercase tracking-wider text-[10px]"
             >
               <span>Retrospectiva Semanal</span>
+            </button>
+
+            <button
+              onClick={() => setShowTour(true)}
+              className="inline-flex items-center text-xs px-2.5 py-1 bg-[#FFF] border border-[#E0DED8] hover:border-[#111] text-[#333] transition-all font-medium uppercase tracking-wider text-[10px]"
+              title="Rever o tutorial do aplicativo"
+            >
+              <span>💡 Guia do App</span>
             </button>
           </div>
 
@@ -341,6 +369,9 @@ export default function EditionFeed({ items, editionId, date, userId }: Props) {
 
       {/* Modal de Retrospectiva Semanal */}
       {showWeeklyModal && <WeeklyDigestModal onClose={() => setShowWeeklyModal(false)} />}
+
+      {/* Tutorial Interativo de Primeiro Uso */}
+      <FirstUseTour isOpen={showTour} onClose={handleCloseTour} />
     </div>
   )
 }

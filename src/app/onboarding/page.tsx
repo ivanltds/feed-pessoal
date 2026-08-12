@@ -74,6 +74,31 @@ function OnboardingForm() {
     }
   }
 
+  const handleSkipOnboarding = () => {
+    const defaultTopics = selectedTopics.length > 0
+      ? selectedTopics
+      : ['Tecnologia', 'Economia', 'Geopolítica', 'Brasil', 'Inteligência Artificial']
+
+    setLoading(true)
+    setError('')
+    fetch('/api/onboarding', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        topics: defaultTopics,
+        editionHour,
+        language,
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        router.push('/')
+      })
+      .catch(() => {
+        router.push('/')
+      })
+  }
+
   return (
     <div
       className="min-h-screen flex flex-col items-center justify-center px-6 py-12"
@@ -81,12 +106,20 @@ function OnboardingForm() {
     >
       <div className="w-full max-w-md">
 
-        {/* Marca + passo */}
-        <div className="flex items-baseline justify-between mb-8">
-          <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-[#9E9E9E]">FEED PESSOAL</p>
-          <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-[#9E9E9E]">
-            {STEP_LABELS[step]} / 04
-          </p>
+        {/* Marca + passo + Botão Pular */}
+        <div className="flex items-center justify-between mb-8 pb-3 border-b border-[#E0DED8]">
+          <div className="flex items-center gap-2">
+            <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-[#111]">FEED PESSOAL</p>
+            <span className="text-[10px] text-[#9E9E9E] font-medium">({STEP_LABELS[step]} / 04)</span>
+          </div>
+          <button
+            type="button"
+            onClick={handleSkipOnboarding}
+            disabled={loading}
+            className="text-xs font-semibold text-[#555] hover:text-[#111] transition-colors underline decoration-dotted underline-offset-4 flex items-center gap-1"
+          >
+            {loading ? 'Criando feed…' : 'Pular onboarding ➔'}
+          </button>
         </div>
 
         {/* ── Passo 1: Catálogo de 94+ Categorias ─────────────────────────────────────────── */}
