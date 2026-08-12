@@ -24,6 +24,12 @@ vi.mock('@/lib/openai', () => ({
                       summary: 'Analistas apontam perigo de aumento de custos.'
                     },
                     {
+                      type: 'global_south',
+                      badge: '🌍 Sul Global & Emergentes',
+                      title: 'Repercussão na América Latina',
+                      summary: 'Impactos no mercado de câmbio regional.'
+                    },
+                    {
                       type: 'outlook',
                       badge: '🔮 Próximos Passos',
                       title: 'Decisão do Copom',
@@ -50,9 +56,10 @@ describe('generatePerspectives', () => {
     })
 
     expect(res.newsItemId).toBe('test-1')
-    expect(res.perspectives.length).toBe(3)
+    expect(res.perspectives.length).toBe(4)
     expect(res.perspectives[0].badge).toContain('Impacto Prático')
     expect(res.perspectives[1].type).toBe('counterpoint')
-    expect(res.perspectives[2].type).toBe('outlook')
+    expect(res.perspectives[2].type).toBe('global_south')
+    expect(res.perspectives[3].type).toBe('outlook')
   })
 })

@@ -7,6 +7,7 @@ import { classifyNewsItems } from './topic-classifier'
 import { rankItems, type TopicWeights } from './ranker'
 import type { RawNewsItem } from '@/domain/news/types'
 import { getCategoryFallbackPhoto } from '@/lib/category-photos'
+import { sendPushNotificationToUser } from '@/lib/push-sender'
 
 export type BuildResult = 'success' | 'already_exists' | 'no_topics' | 'no_items'
 
@@ -35,13 +36,16 @@ export async function buildEditionForUser(userId: string): Promise<BuildResult> 
     return 'no_topics'
   }
 
-  const selectedTopics = user.topicWeights
+
+
+  const userWeights = user.topicWeights ?? []
+  const selectedTopics = userWeights
     .filter((w) => w.weight >= 2.0)
     .map((w) => w.topic)
 
   const topics = selectedTopics.length > 0
     ? selectedTopics
-    : user.topicWeights.map((w) => w.topic)
+    : userWeights.map((w) => w.topic)
 
   if (topics.length === 0) {
     console.log(`[EditionBuilder] Usuário ${userId} sem tópicos configurados`)
@@ -140,6 +144,16 @@ export async function buildEditionForUser(userId: string): Promise<BuildResult> 
   })
 
   console.log(`[EditionBuilder] Edição ${edition.id} criada para ${userId} com ${rankedItems.length} itens`)
+
+  // Dispara notificação push automática se o usuário tiver dispositivos cadastrados
+  const topTitle = normalizedTitles[0] || 'Sua edição do dia'
+  sendPushNotificationToUser(userId, {
+    title: 'feed pessoal 📰',
+    body: `Sua edição diária está pronta: "${topTitle}"`,
+    url: '/',
+    tag: 'daily-edition'
+  }).catch((err) => console.error('[EditionBuilder] Erro ao enviar push automático:', err))
+
   return 'success'
 }
 

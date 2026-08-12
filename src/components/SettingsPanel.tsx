@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { TOPIC_GROUPS } from '@/domain/news/types'
+import { usePushNotifications } from '@/hooks/usePushNotifications'
 
 const LANGUAGES: { code: string; label: string; native: string }[] = [
   { code: 'pt-BR', label: 'Português',   native: 'Brasil' },
@@ -17,6 +18,7 @@ const LANGUAGES: { code: string; label: string; native: string }[] = [
 ]
 
 interface UserPrefs {
+  id?: string
   name: string
   email: string | null
   editionHour: 7 | 19
@@ -32,6 +34,20 @@ export default function SettingsPanel() {
   const [saved, setSaved] = useState(false)
   const [loadError, setLoadError] = useState(false)
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({})
+
+  const [testingPush, setTestingPush] = useState(false)
+  const [pushFeedbackMsg, setPushFeedbackMsg] = useState<string | null>(null)
+
+  const {
+    isSupported: isPushSupported,
+    isSubscribed: isPushSubscribed,
+    loading: pushLoading,
+    isIos,
+    isStandalone,
+    subscribeUser,
+    unsubscribeUser,
+    sendTestNotification
+  } = usePushNotifications()
 
   useEffect(() => {
     if (!open || prefs) return
@@ -357,9 +373,91 @@ export default function SettingsPanel() {
                           {hour === 7 ? 'Manhã — 07:00' : 'Noite — 19:00'}
                         </button>
                       ))}
-                    </div>
                   </section>
 
+                  {/* Notificações Push & PWA */}
+                  <section className="p-4 border border-[#E0DED8] bg-[#F8F7F4] space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">🔔</span>
+                        <p className="text-[10px] uppercase tracking-[0.18em] text-[#9E9E9E] font-bold">
+                          NOTIFICAÇÕES PUSH / PWA
+                        </p>
+                      </div>
+                      {isPushSubscribed && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 bg-[#059669] text-white">
+                          Ativas
+                        </span>
+                      )}
+                    </div>
+
+                    <p className="text-xs text-[#666] leading-relaxed">
+                      Receba uma notificação nativa no seu celular ou computador assim que a sua edição diária for gerada.
+                    </p>
+
+                    {/* Guia para iOS */}
+                    {isIos && !isStandalone && (
+                      <div className="p-3 bg-[#FEF3C7] border border-[#F59E0B] text-[#92400E] text-xs space-y-1">
+                        <p className="font-bold">📱 Dica para iPhone/iPad:</p>
+                        <p>No iOS, para liberar as notificações, toque no botão <strong>Compartilhar</strong> do Safari e escolha <strong>"Adicionar à Tela de Início"</strong>.</p>
+                      </div>
+                    )}
+
+                    {!isPushSupported ? (
+                      <p className="text-xs text-[#DC2626] font-medium">
+                        Seu navegador atual não suporta Notificações Web Push.
+                      </p>
+                    ) : (
+                      <div className="space-y-2 pt-1">
+                        <button
+                          type="button"
+                          disabled={pushLoading || !prefs.id}
+                          onClick={async () => {
+                            if (!prefs.id) return
+                            if (isPushSubscribed) {
+                              await unsubscribeUser(prefs.id)
+                            } else {
+                              await subscribeUser(prefs.id)
+                            }
+                          }}
+                          className="w-full py-2.5 px-3 text-xs font-semibold uppercase tracking-wider transition-all"
+                          style={{
+                            background: isPushSubscribed ? '#DC2626' : '#111',
+                            color: '#FFF',
+                            opacity: pushLoading || !prefs.id ? 0.5 : 1
+                          }}
+                        >
+                          {pushLoading ? 'Processando…' : isPushSubscribed ? 'Desativar Notificações' : 'Ativar Notificações Push'}
+                        </button>
+
+                        {isPushSubscribed && prefs.id && (
+                          <button
+                            type="button"
+                            disabled={testingPush}
+                            onClick={async () => {
+                              if (!prefs.id) return
+                              setTestingPush(true)
+                              const ok = await sendTestNotification(prefs.id)
+                              setTestingPush(false)
+                              if (ok) {
+                                setPushFeedbackMsg('Notificação de teste enviada!')
+                                setTimeout(() => setPushFeedbackMsg(null), 4000)
+                              }
+                            }}
+                            className="w-full py-2 px-3 text-xs font-medium text-[#111] bg-[#FFF] border border-[#E0DED8] hover:bg-[#F0EFEA] transition-colors"
+                          >
+                            {testingPush ? 'Enviando teste…' : '🔔 Disparar notificação de teste'}
+                          </button>
+                        )}
+
+                        {pushFeedbackMsg && (
+                          <p className="text-xs text-[#059669] font-semibold text-center py-1">
+                            {pushFeedbackMsg}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </section>
                 </div>
 
                 {/* Rodapé */}

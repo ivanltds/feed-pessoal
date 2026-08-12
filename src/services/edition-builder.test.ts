@@ -17,6 +17,9 @@ vi.mock('@/lib/prisma', () => ({
         { topic: 'Economia', weight: 1 },
       ]),
     },
+    pushSubscription: {
+      findMany: vi.fn().mockResolvedValue([]),
+    },
   },
 }))
 
@@ -51,14 +54,25 @@ vi.mock('./summary-generator', () => ({
 const { prisma } = await import('@/lib/prisma')
 
 describe('buildEditionForUser', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks()
+    const { fetchFromRss } = await import('@/adapters/rss/rss-adapter')
+    vi.mocked(fetchFromRss).mockResolvedValue([
+      {
+        sourceId: 'src-1',
+        sourceName: 'Tech Blog',
+        topic: 'Tecnologia',
+        title: 'Raw Article Title',
+        url: 'https://example.com/article-1',
+        publishedAt: new Date(),
+      },
+    ])
     // por padrão não há edição existente
     vi.mocked(prisma.edition.findUnique).mockResolvedValue(null)
-    vi.mocked(prisma.user.findUnique).mockResolvedValue({ language: 'pt-BR' } as any)
-    vi.mocked(prisma.userTopicWeight.findMany).mockResolvedValue([
-      { topic: 'Tecnologia', weight: 5 } as any,
-    ])
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      language: 'pt-BR',
+      topicWeights: [{ topic: 'Tecnologia', weight: 5 }]
+    } as any)
   })
 
   it('retorna "already_exists" se já existe edição hoje', async () => {
@@ -68,7 +82,10 @@ describe('buildEditionForUser', () => {
   })
 
   it('retorna "no_topics" se usuário não tem tópicos configurados', async () => {
-    vi.mocked(prisma.userTopicWeight.findMany).mockResolvedValue([])
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      language: 'pt-BR',
+      topicWeights: []
+    } as any)
     const result = await buildEditionForUser('user-123')
     expect(result).toBe('no_topics')
   })
@@ -87,10 +104,13 @@ describe('buildEditionForUser', () => {
   })
 
   it('usa tópicos acima de weight > 1.0 como ativos', async () => {
-    vi.mocked(prisma.userTopicWeight.findMany).mockResolvedValue([
-      { topic: 'Tecnologia', weight: 5 } as any,
-      { topic: 'Economia',   weight: 1 } as any, // exatamente 1.0 — não deve ser ativo
-    ])
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      language: 'pt-BR',
+      topicWeights: [
+        { topic: 'Tecnologia', weight: 5 },
+        { topic: 'Economia', weight: 1 }
+      ]
+    } as any)
     const { getSourcesByTopics } = await import('@/adapters/sources')
     await buildEditionForUser('user-123')
     const calledWith = vi.mocked(getSourcesByTopics).mock.calls[0][0] as string[]
