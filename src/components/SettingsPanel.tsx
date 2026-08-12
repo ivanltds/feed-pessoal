@@ -373,6 +373,7 @@ export default function SettingsPanel() {
                           {hour === 7 ? 'Manhã — 07:00' : 'Noite — 19:00'}
                         </button>
                       ))}
+                    </div>
                   </section>
 
                   {/* Notificações Push & PWA */}
